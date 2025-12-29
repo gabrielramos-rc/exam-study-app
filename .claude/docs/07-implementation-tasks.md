@@ -379,6 +379,7 @@ Before starting this phase, read:
 - [ ] *(Review)* Validate JSONB data structure tests
 
 ### 6.7 Dependency Management
+
 **Source:** PR #11 review
 - [ ] **[PR #11]** Document dependency update policy/schedule
   - File: `.claude/docs/08-deployment-guide.md` or new `SECURITY.md`
