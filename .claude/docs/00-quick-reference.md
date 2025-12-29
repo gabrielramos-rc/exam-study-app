@@ -454,6 +454,19 @@ UPLOAD_MAX_SIZE=52428800  # 50MB
 
 ---
 
+## Layout Components
+
+| Component | Purpose |
+|-----------|---------|
+| `MainLayout` | Main app layout with header, sidebar, mobile nav |
+| `Header` | Sticky header with app logo and theme toggle |
+| `Sidebar` | Desktop navigation (visible on md+) |
+| `MobileNav` | Bottom navigation for mobile |
+| `ThemeToggle` | Dark/light mode toggle button |
+| `Providers` | App-wide providers wrapper (theme) |
+
+---
+
 ## shadcn/ui Components Used
 
 Button, Card, Badge, Progress, Dialog, DropdownMenu, Tabs, Input, Textarea, Select, Checkbox, RadioGroup, Toast, Skeleton
