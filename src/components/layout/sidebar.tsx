@@ -2,36 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  BookOpen,
-  Settings,
-  FolderCog,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  {
-    title: "Dashboard",
-    href: "/",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Exams",
-    href: "/admin/exams",
-    icon: BookOpen,
-  },
-  {
-    title: "Admin",
-    href: "/admin",
-    icon: FolderCog,
-  },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
-  },
-];
+import { navItems } from "@/config/navigation";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -42,7 +14,7 @@ export function Sidebar() {
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href));
+            (item.href !== "/" && pathname.startsWith(item.href + "/"));
           return (
             <Link
               key={item.href}
