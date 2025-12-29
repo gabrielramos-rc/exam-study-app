@@ -1,0 +1,257 @@
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths:
+      # Code changes
+      - 'src/**'
+      - 'prisma/**'
+      - 'package*.json'
+      # Infrastructure changes
+      - 'Dockerfile'
+      - 'k8s/**'
+      - '.github/workflows/**'
+      # Config changes
+      - 'tsconfig.json'
+      - 'next.config.*'
+      - 'tailwind.config.*'
+
+# Cancel in-progress reviews when new commits are pushed
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  claude-review:
+    name: Claude Review
+    runs-on: ubuntu-latest
+    # Skip draft PRs
+    if: github.event.pull_request.draft == false
+    # Allow failure if token not configured
+    continue-on-error: true
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better diff analysis
+
+      - name: Get PR info
+        id: pr-info
+        run: |
+          echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          echo "is_dependabot=${{ github.actor == 'dependabot[bot]' }}" >> $GITHUB_OUTPUT
+          echo "event_action=${{ github.event.action }}" >> $GITHUB_OUTPUT
+          echo "head_sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+          echo "base_sha=${{ github.event.pull_request.base.sha }}" >> $GITHUB_OUTPUT
+
+          # Count changed files by category
+          CHANGED_FILES=$(gh pr diff ${{ github.event.pull_request.number }} --name-only || echo "")
+          echo "has_src_changes=$(echo "$CHANGED_FILES" | grep -q '^src/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_prisma_changes=$(echo "$CHANGED_FILES" | grep -q '^prisma/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_k8s_changes=$(echo "$CHANGED_FILES" | grep -q '^k8s/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_docker_changes=$(echo "$CHANGED_FILES" | grep -qE '^Dockerfile|docker-compose' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_workflow_changes=$(echo "$CHANGED_FILES" | grep -q '^\.github/workflows/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Run Claude PR Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          prompt: |
+            # Claude PR Review Task
+
+            ## Context
+            - Repository: ${{ github.repository }}
+            - PR Number: #${{ github.event.pull_request.number }}
+            - PR Title: ${{ github.event.pull_request.title }}
+            - Author: ${{ github.event.pull_request.user.login }}
+            - Event: ${{ github.event.action }}
+            - Head SHA: ${{ steps.pr-info.outputs.head_sha }}
+            - Base Branch: ${{ github.event.pull_request.base.ref }}
+            - Is Dependabot: ${{ steps.pr-info.outputs.is_dependabot }}
+
+            ## Changed Areas
+            - Source code: ${{ steps.pr-info.outputs.has_src_changes }}
+            - Prisma/Database: ${{ steps.pr-info.outputs.has_prisma_changes }}
+            - Kubernetes: ${{ steps.pr-info.outputs.has_k8s_changes }}
+            - Docker: ${{ steps.pr-info.outputs.has_docker_changes }}
+            - GitHub Workflows: ${{ steps.pr-info.outputs.has_workflow_changes }}
+
+            ## Your Task
+
+            Review this PR comprehensively. Use `gh pr diff ${{ github.event.pull_request.number }}` to see the changes.
+
+            ### Review Checklist (adapt based on what changed)
+
+            **Code Quality:**
+            - Clean code principles, DRY, appropriate abstractions
+            - TypeScript: proper typing, no `any` abuse, null safety
+            - React: hooks rules, proper key props, memo/callback usage
+            - Error handling and edge cases
+
+            **Security (CRITICAL):**
+            - Injection vulnerabilities (SQL, XSS, command injection)
+            - Authentication/authorization gaps
+            - Hardcoded secrets, API keys, credentials
+            - Input validation and sanitization
+            - OWASP Top 10 issues
+
+            **Performance:**
+            - N+1 query patterns
+            - Unnecessary re-renders
+            - Large bundle additions
+            - Blocking operations
+
+            **Database (if Prisma changes):**
+            - Migration safety and reversibility
+            - Index considerations
+            - Data integrity constraints
+
+            **Kubernetes (if k8s changes):**
+            - Resource limits and requests set
+            - Security contexts configured
+            - Image tags pinned (not :latest in prod)
+            - Proper labels and selectors
+
+            **Dependencies (if package.json changes):**
+            - New dependencies justified?
+            - License compatibility
+            - Actively maintained?
+
+            **Tests:**
+            - New code has test coverage?
+            - Edge cases covered?
+
+            ### Special Modes
+
+            - If this is a **Dependabot PR**: Focus ONLY on security implications. Skip style/code quality nitpicks.
+            - If event is **synchronize** (new commits pushed): Focus on what changed since last review. Reference previous review if found.
+
+            ### Output Format
+
+            Structure your review with severity levels:
+
+            ```
+            ## 🔍 Claude PR Review
+
+            **Reviewed:** `<first 7 chars of head SHA>`
+            **Overall:** ✅ Looks Good | ⚠️ Minor Issues | 🚨 Changes Requested
+
+            ### 🔴 Critical (must fix before merge)
+            [Security issues, data loss risks, breaking bugs]
+
+            ### 🟠 High Priority (should fix)
+            [Bugs, significant issues]
+
+            ### 🟡 Suggestions (consider fixing)
+            <details><summary>N suggestions</summary>
+            [Style, minor improvements - use collapsible]
+            </details>
+
+            ### ✅ What Looks Good
+            [Brief positive notes - 2-3 bullet points max]
+
+            ---
+            *Review by Claude · [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+            ```
+
+            ### Comment Management (IMPORTANT)
+
+            1. First, check for an existing Claude review comment:
+               ```bash
+               gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+                 --jq '.[] | select(.body | contains("<!-- CLAUDE-PR-REVIEW -->")) | {id: .id, body: .body}' | head -1
+               ```
+
+            2. If a previous review exists:
+               - UPDATE the existing comment instead of creating a new one
+               - Add a note: "Updated review for commit `<sha>`"
+               - Use: `gh api repos/${{ github.repository }}/issues/comments/COMMENT_ID -X PATCH -f body="..."`
+
+            3. If no previous review:
+               - Create a new comment with the marker: `<!-- CLAUDE-PR-REVIEW -->`
+               - Use: `gh pr comment ${{ github.event.pull_request.number }} --body "..."`
+
+            4. Always start your comment body with: `<!-- CLAUDE-PR-REVIEW -->`
+
+            ### Review Actions
+
+            After posting/updating the comment:
+
+            - If **Critical or High Priority issues found**: Submit a blocking review
+              ```bash
+              gh pr review ${{ github.event.pull_request.number }} --request-changes --body "Please address the critical/high priority issues noted in my review comment above."
+              ```
+
+            - If **Only suggestions** (no critical or high): Submit a comment review (non-blocking)
+              ```bash
+              gh pr review ${{ github.event.pull_request.number }} --comment --body "Review complete. See my detailed comment above. Minor suggestions noted but not blocking."
+              ```
+
+            - If **All looks good** (no issues):
+              ```bash
+              gh pr review ${{ github.event.pull_request.number }} --comment --body "✅ Code review complete. No issues found."
+              ```
+
+            Note: Do NOT use --approve automatically. Let humans make the final approval decision.
+
+          claude_args: '--allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr review:*),Bash(gh api:*),Read,Glob,Grep"'
+
+  # Light review for Dependabot PRs (runs in parallel, faster)
+  dependabot-security-check:
+    name: Dependabot Security Check
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.draft == false
+    continue-on-error: true
+
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Security-Only Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          prompt: |
+            # Dependabot PR Security Check
+
+            PR: #${{ github.event.pull_request.number }}
+            Title: ${{ github.event.pull_request.title }}
+
+            This is a Dependabot dependency update. Perform a QUICK security-focused review:
+
+            1. Check if this update addresses any known CVEs
+            2. Look for breaking changes that might affect security
+            3. Verify the update is from a legitimate source
+
+            Use `gh pr diff ${{ github.event.pull_request.number }}` to see what changed.
+
+            Be BRIEF. Only comment if there are security concerns. Use:
+
+            ```bash
+            gh pr comment ${{ github.event.pull_request.number }} --body "<!-- CLAUDE-DEPENDABOT-CHECK -->
+            ## 🔒 Security Check
+
+            [Your findings - keep it short]
+            "
+            ```
+
+            If no concerns, just approve silently - no comment needed.
+
+          claude_args: '--allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr review:*)"'
