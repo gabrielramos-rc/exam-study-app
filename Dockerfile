@@ -21,9 +21,6 @@ RUN npm run build
 # Production stage
 FROM node:22-alpine AS runner
 
-# Pin npm version for reproducible builds (includes fix for CVE-2025-64756)
-RUN npm install -g npm@10.9.2
-
 WORKDIR /app
 
 ENV NODE_ENV=production
