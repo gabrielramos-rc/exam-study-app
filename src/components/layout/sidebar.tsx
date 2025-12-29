@@ -12,9 +12,12 @@ export function Sidebar() {
     <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:pt-14 border-r border-border bg-background">
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navItems.map((item) => {
+          // Normalize paths with trailing slashes to prevent parent routes
+          // from being marked active when viewing child routes
+          const normalizedPathname = pathname.endsWith("/") ? pathname : pathname + "/";
+          const normalizedHref = item.href.endsWith("/") ? item.href : item.href + "/";
           const isActive =
-            pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href + "/"));
+            pathname === item.href || normalizedPathname === normalizedHref;
           return (
             <Link
               key={item.href}

@@ -54,7 +54,7 @@
 | Kustomize | K8s configuration management | built-in |
 | ArgoCD | GitOps continuous delivery | stable |
 | PostgreSQL | Relational database | 18 |
-| Node.js | JavaScript runtime | 22 LTS |
+| Node.js | JavaScript runtime | 24 LTS |
 
 ### CI/CD
 | Technology | Purpose |

@@ -12,9 +12,12 @@ export function MobileNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-background">
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
+          // Normalize paths with trailing slashes to prevent parent routes
+          // from being marked active when viewing child routes
+          const normalizedPathname = pathname.endsWith("/") ? pathname : pathname + "/";
+          const normalizedHref = item.href.endsWith("/") ? item.href : item.href + "/";
           const isActive =
-            pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href + "/"));
+            pathname === item.href || normalizedPathname === normalizedHref;
           return (
             <Link
               key={item.href}

@@ -34,13 +34,25 @@ if (process.env.NODE_ENV !== 'production') {
 
 /**
  * Gracefully disconnect Prisma and close the connection pool.
- * Use this for clean shutdown on SIGTERM/SIGINT.
+ * Called automatically on SIGTERM/SIGINT for clean shutdown.
  */
-export async function disconnectPrisma(): Promise<void> {
+async function disconnectPrisma(): Promise<void> {
   await prisma.$disconnect();
   if (globalForPrisma.pool) {
     await globalForPrisma.pool.end();
   }
+}
+
+// Register graceful shutdown handlers (only in production to avoid issues with hot-reload)
+if (process.env.NODE_ENV === 'production') {
+  const shutdown = async (signal: string) => {
+    console.log(`Received ${signal}, shutting down gracefully...`);
+    await disconnectPrisma();
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 export default prisma;
