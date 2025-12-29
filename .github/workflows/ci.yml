@@ -76,6 +76,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Prisma client
+        run: npx prisma generate
+        continue-on-error: true
+
       - name: Build application
         run: npm run build
 
@@ -132,12 +136,12 @@ jobs:
       - name: Check if test script exists
         id: check-tests
         run: |
-          if npm run test --if-present 2>/dev/null; then
+          if grep -q '"test":' package.json && ! grep -q '"test": "echo' package.json; then
             echo "has_tests=true" >> $GITHUB_OUTPUT
           else
             echo "has_tests=false" >> $GITHUB_OUTPUT
+            echo "::notice::No test script configured, skipping tests"
           fi
-        continue-on-error: true
 
       - name: Run tests
         if: steps.check-tests.outputs.has_tests == 'true'
