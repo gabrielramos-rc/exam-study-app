@@ -88,9 +88,10 @@ exam-study-app/
 │   ├── start.sh                # Start port-forwards
 │   └── stop.sh                 # Stop port-forwards
 ├── Dockerfile                  # App container build
+├── .dockerignore               # Docker build exclusions
 ├── .env.example                # Environment template
 ├── package.json                # Dependencies
-├── next.config.js              # Next.js configuration
+├── next.config.ts              # Next.js configuration (standalone output)
 ├── tailwind.config.js          # Tailwind configuration
 ├── tsconfig.json               # TypeScript configuration
 │
@@ -122,6 +123,7 @@ exam-study-app/
 │   │   │   └── progress/
 │   │   │
 │   │   └── api/                # API routes
+│   │       ├── health/         # Kubernetes probe endpoint
 │   │       ├── exams/
 │   │       ├── questions/
 │   │       ├── import/

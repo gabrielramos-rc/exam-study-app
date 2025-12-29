@@ -14,6 +14,34 @@ No authentication required (single-user application).
 
 ## Endpoints
 
+### Health Check
+
+#### Get Health Status
+```http
+GET /api/health
+```
+
+**Response (Healthy - 200)**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:00:00.000Z",
+  "database": "connected"
+}
+```
+
+**Response (Unhealthy - 503)**
+```json
+{
+  "status": "unhealthy",
+  "timestamp": "2024-01-15T10:00:00.000Z",
+  "database": "disconnected",
+  "error": "Connection refused"
+}
+```
+
+---
+
 ### Exams
 
 #### List Exams

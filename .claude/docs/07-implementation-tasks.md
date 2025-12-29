@@ -70,14 +70,18 @@ Before starting this phase, read:
 
 ### 1.5 App Kubernetes Setup
 **Read:** `08-deployment-guide.md` (Kubernetes Configuration section)
-- [ ] Create `Dockerfile` for Next.js app
-- [ ] Create `k8s/base/` directory structure
-- [ ] Create ConfigMap for app config (`k8s/base/app/configmap.yaml`)
-- [ ] Create App manifests:
-  - [ ] Deployment (`k8s/base/app/deployment.yaml`) - references `postgres-credentials` secret
-  - [ ] Service (`k8s/base/app/service.yaml`)
-- [ ] Create migration Job (`k8s/base/jobs/migration-job.yaml`)
-- [ ] Test: Build image and deploy to dev namespace
+- [x] Create `Dockerfile` for Next.js app
+- [x] Create `k8s/base/` directory structure
+- [x] Create ConfigMap for app config (`k8s/base/app/configmap.yaml`)
+- [x] Create App manifests:
+  - [x] Deployment (`k8s/base/app/deployment.yaml`) - references `postgres-credentials` secret
+  - [x] Service (`k8s/base/app/service.yaml`)
+- [x] Create migration Job (`k8s/base/jobs/migration-job.yaml`)
+- [x] Test: Build image and deploy to dev namespace
+- [x] Create `/api/health` endpoint for Kubernetes probes
+- [x] Configure Next.js standalone output
+- [x] Create `.dockerignore` for optimized builds
+- [x] Update Kustomize overlays for Helm PostgreSQL integration
 
 ### 1.6 Basic Layout
 **Read:** `05-frontend-design.md` (Page Layouts section)
