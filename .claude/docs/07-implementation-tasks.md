@@ -142,6 +142,8 @@ Before starting this phase, read:
   - [ ] Return import summary
 - [ ] Create import page (`/admin/exams/[id]/import`)
 - [ ] Show import results (success, skipped, errors)
+- [ ] *(Review)* Add input validation for JSONB question data structure
+- [ ] *(Review)* Add rate limiting to prevent resource exhaustion
 
 **Deliverables:**
 - Admin can create/delete exams
@@ -277,6 +279,7 @@ Before starting this phase, read:
 - [ ] Implement `GET /api/analytics/sections`
 - [ ] Implement `GET /api/analytics/weak-areas`
 - [ ] Complex queries with Prisma raw SQL where needed
+- [ ] *(Review)* Add rate limiting on heavy analytics queries
 
 ### 5.2 Charts
 **Read:** `05-frontend-design.md` (Charts section)
@@ -361,6 +364,9 @@ Before starting this phase, read:
 - [ ] Unit tests for SM-2 algorithm
 - [ ] Integration tests for API routes
 - [ ] E2E tests for critical flows (optional)
+- [ ] *(Review)* Integration tests for Prisma client operations
+- [ ] *(Review)* Test cascade delete behavior (Exam → Questions → Answers)
+- [ ] *(Review)* Validate JSONB data structure tests
 
 **Deliverables:**
 - PWA working with offline support
