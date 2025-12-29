@@ -10,10 +10,14 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 /**
- * Parse and validate an integer environment variable.
- * Throws an error if the value is not a valid integer.
+ * Parse and validate an integer environment variable with optional range validation.
+ * Throws an error if the value is not a valid integer or outside the specified range.
  */
-function parseIntEnv(envVar: string, defaultValue: number): number {
+function parseIntEnv(
+  envVar: string,
+  defaultValue: number,
+  options?: { min?: number; max?: number }
+): number {
   const value = process.env[envVar];
   if (value === undefined) {
     return defaultValue;
@@ -21,6 +25,12 @@ function parseIntEnv(envVar: string, defaultValue: number): number {
   const parsed = parseInt(value, 10);
   if (isNaN(parsed)) {
     throw new Error(`Invalid ${envVar}: "${value}" is not a valid integer`);
+  }
+  if (options?.min !== undefined && parsed < options.min) {
+    throw new Error(`Invalid ${envVar}: ${parsed} is below minimum value of ${options.min}`);
+  }
+  if (options?.max !== undefined && parsed > options.max) {
+    throw new Error(`Invalid ${envVar}: ${parsed} exceeds maximum value of ${options.max}`);
   }
   return parsed;
 }
@@ -32,10 +42,10 @@ function createPrismaClient(): PrismaClient {
     throw new Error('DATABASE_URL environment variable is not set');
   }
 
-  // Parse and validate pool configuration
-  const poolMax = parseIntEnv('DB_POOL_MAX', 10);
-  const poolIdleTimeout = parseIntEnv('DB_POOL_IDLE_TIMEOUT', 10000);
-  const poolConnectTimeout = parseIntEnv('DB_POOL_CONNECT_TIMEOUT', 5000);
+  // Parse and validate pool configuration with sensible ranges
+  const poolMax = parseIntEnv('DB_POOL_MAX', 10, { min: 1, max: 100 });
+  const poolIdleTimeout = parseIntEnv('DB_POOL_IDLE_TIMEOUT', 10000, { min: 0 });
+  const poolConnectTimeout = parseIntEnv('DB_POOL_CONNECT_TIMEOUT', 5000, { min: 0 });
 
   // Reuse existing pool in development to prevent leaks during hot-reload
   const pool = globalForPrisma.pool ?? new Pool({

@@ -16,7 +16,8 @@ spec:
       containers:
         - name: migrate
           image: ghcr.io/gabrielramos-rc/exam-study-app:latest
-          command: ["npx", "prisma", "migrate", "deploy"]
+          # Use node directly since npx is removed from production image for security
+          command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
           env:
             - name: DATABASE_URL
               valueFrom:
