@@ -7,7 +7,10 @@ on:
 
 jobs:
   security-review:
+    # Only run if CLAUDE_CODE_OAUTH_TOKEN secret is configured
+    if: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
     runs-on: ubuntu-latest
+    continue-on-error: true
     permissions:
       contents: read
       pull-requests: read

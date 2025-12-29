@@ -5,14 +5,31 @@ on:
     branches: [main, master, dev]
     paths:
       - 'prisma/**'
-      - 'package.json'
 
 concurrency:
   group: migrations-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  check-schema:
+    runs-on: ubuntu-latest
+    outputs:
+      has-schema: ${{ steps.check.outputs.has-schema }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for Prisma schema
+        id: check
+        run: |
+          if [ -f "prisma/schema.prisma" ]; then
+            echo "has-schema=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-schema=false" >> $GITHUB_OUTPUT
+            echo "::warning::Prisma schema not found, skipping migrations"
+          fi
+
   migrate:
+    needs: check-schema
+    if: needs.check-schema.outputs.has-schema == 'true'
     runs-on: ubuntu-latest
 
     services:

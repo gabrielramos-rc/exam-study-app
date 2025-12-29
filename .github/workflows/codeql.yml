@@ -16,6 +16,9 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    # Code scanning must be enabled in repository settings
+    # Settings > Security > Code security and analysis > Code scanning
+    continue-on-error: true
     permissions:
       actions: read
       contents: read

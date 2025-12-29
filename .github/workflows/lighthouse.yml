@@ -3,15 +3,43 @@ name: Lighthouse CI
 on:
   pull_request:
     branches: [main, master, dev]
+    paths:
+      - 'src/**'
+      - 'prisma/**'
+      - 'package.json'
+      - 'lighthouserc.json'
   push:
     branches: [main, master, dev]
+    paths:
+      - 'src/**'
+      - 'prisma/**'
+      - 'package.json'
+      - 'lighthouserc.json'
 
 concurrency:
   group: lighthouse-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  check-prerequisites:
+    runs-on: ubuntu-latest
+    outputs:
+      has-prisma: ${{ steps.check.outputs.has-prisma }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for Prisma schema
+        id: check
+        run: |
+          if [ -f "prisma/schema.prisma" ]; then
+            echo "has-prisma=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-prisma=false" >> $GITHUB_OUTPUT
+            echo "::warning::Prisma schema not found, skipping Lighthouse CI"
+          fi
+
   lighthouse:
+    needs: check-prerequisites
+    if: needs.check-prerequisites.outputs.has-prisma == 'true'
     runs-on: ubuntu-latest
 
     services:
