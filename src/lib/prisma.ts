@@ -16,7 +16,13 @@ function createPrismaClient(): PrismaClient {
     throw new Error('DATABASE_URL environment variable is not set');
   }
 
-  const pool = new Pool({ connectionString });
+  // Reuse existing pool in development to prevent leaks during hot-reload
+  const pool = globalForPrisma.pool ?? new Pool({
+    connectionString,
+    max: parseInt(process.env.DB_POOL_MAX ?? '10', 10),
+    idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT ?? '10000', 10),
+    connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECT_TIMEOUT ?? '5000', 10),
+  });
   globalForPrisma.pool = pool;
   const adapter = new PrismaPg(pool);
 
@@ -47,8 +53,14 @@ async function disconnectPrisma(): Promise<void> {
 if (process.env.NODE_ENV === 'production') {
   const shutdown = async (signal: string) => {
     console.log(`Received ${signal}, shutting down gracefully...`);
-    await disconnectPrisma();
-    process.exit(0);
+    try {
+      await disconnectPrisma();
+      console.log('Prisma disconnected successfully');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error during graceful shutdown:', error);
+      process.exit(1);
+    }
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
