@@ -3,6 +3,8 @@ name: Dependency Review
 on:
   pull_request:
     branches: [main, master, dev]
+    paths:
+      - 'package*.json'
 
 concurrency:
   group: deps-${{ github.ref }}

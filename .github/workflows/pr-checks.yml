@@ -9,6 +9,13 @@ permissions:
 on:
   pull_request:
     branches: [main, master, dev]
+    paths:
+      - 'src/**'
+      - 'package*.json'
+      - 'prisma/**'
+      - 'tsconfig.json'
+      - 'Dockerfile'
+      - '.github/workflows/**'
 
 concurrency:
   group: pr-check-${{ github.ref }}
