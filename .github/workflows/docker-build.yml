@@ -1,0 +1,124 @@
+name: Docker Build & Security Scan
+
+permissions:
+  contents: read
+  security-events: write
+
+on:
+  pull_request:
+    branches: [main, master, dev]
+    paths:
+      - 'Dockerfile'
+      - 'k8s/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - 'prisma/**'
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-prerequisites:
+    runs-on: ubuntu-latest
+    outputs:
+      has-dockerfile: ${{ steps.check.outputs.has-dockerfile }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for Dockerfile
+        id: check
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "has-dockerfile=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-dockerfile=false" >> $GITHUB_OUTPUT
+            echo "::warning::Dockerfile not found, skipping Docker build"
+          fi
+
+  build:
+    name: Build Docker Image
+    needs: check-prerequisites
+    if: needs.check-prerequisites.outputs.has-dockerfile == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: exam-study-app:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: exam-study-app:test
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Run Trivy for SARIF output
+        uses: aquasecurity/trivy-action@0.28.0
+        if: always()
+        with:
+          image-ref: exam-study-app:test
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        continue-on-error: true
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  validate-k8s:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install kubeconform
+        run: |
+          curl -sL https://github.com/yannh/kubeconform/releases/download/v0.6.4/kubeconform-linux-amd64.tar.gz | tar xz
+          sudo mv kubeconform /usr/local/bin/
+
+      - name: Lint Kubernetes manifests with kubeconform
+        run: |
+          kubeconform -summary -strict \
+            -kubernetes-version 1.29.0 \
+            -ignore-missing-schemas \
+            -skip argocd/application-dev.yaml,argocd/application-prod.yaml,argocd/project.yaml,argocd/image-updater.yaml \
+            k8s/
+
+  lint-dockerfile:
+    name: Lint Dockerfile
+    needs: check-prerequisites
+    if: needs.check-prerequisites.outputs.has-dockerfile == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Lint Dockerfile with Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning
