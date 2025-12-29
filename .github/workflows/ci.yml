@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main, master, dev]
 
+permissions:
+  contents: read
+
 # Cancel outdated runs for the same branch
 concurrency:
   group: ci-${{ github.ref }}
