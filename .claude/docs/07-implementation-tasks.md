@@ -91,10 +91,10 @@ Before starting this phase, read:
 ### 1.6 Basic Layout
 
 **Read:** `05-frontend-design.md` (Page Layouts section)
-- [ ] Create root layout with providers
-- [ ] Create sidebar navigation component
-- [ ] Create header component with theme toggle
-- [ ] Set up next-themes for dark/light mode
+- [x] Create root layout with providers
+- [x] Create sidebar navigation component
+- [x] Create header component with theme toggle
+- [x] Set up next-themes for dark/light mode
 
 **Deliverables:**
 - Working Next.js app with Tailwind + shadcn/ui
