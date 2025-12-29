@@ -19,7 +19,7 @@ jobs:
     outputs:
       has-schema: ${{ steps.check.outputs.has-schema }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check for Prisma schema
         id: check
         run: |
@@ -52,7 +52,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
