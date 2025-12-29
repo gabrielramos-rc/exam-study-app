@@ -1,0 +1,67 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: exam-study
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Exam Study App Project (Dev & Prod environments)
+
+  # Allow deploying from this repo
+  sourceRepos:
+    - https://github.com/gabrielramos-rc/exam-study-app.git
+
+  # Allow deploying to these namespaces
+  destinations:
+    - namespace: exam-study-dev
+      server: https://kubernetes.default.svc
+    - namespace: exam-study-prod
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+
+  # Allow these cluster resources
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'networking.k8s.io'
+      kind: Ingress
+    - group: 'networking.k8s.io'
+      kind: IngressClass
+
+  # Allow all namespace resources
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  # Orphaned resources monitoring
+  orphanedResources:
+    warn: true
+
+  # Sync windows (optional - restrict when prod can sync)
+  # syncWindows:
+  #   - kind: deny
+  #     schedule: '0 22 * * *'  # Deny syncs at 10 PM
+  #     duration: 8h            # For 8 hours
+  #     applications:
+  #       - exam-study-app-prod
+  #     namespaces:
+  #       - exam-study-prod
+
+  # Roles for fine-grained access (optional)
+  roles:
+    - name: developer
+      description: Developer access - can sync dev, view prod
+      policies:
+        - p, proj:exam-study:developer, applications, sync, exam-study/exam-study-app-dev, allow
+        - p, proj:exam-study:developer, applications, get, exam-study/*, allow
+      groups:
+        - developers
+
+    - name: admin
+      description: Admin access - full control
+      policies:
+        - p, proj:exam-study:admin, applications, *, exam-study/*, allow
+      groups:
+        - admins

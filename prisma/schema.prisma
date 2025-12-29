@@ -1,0 +1,114 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // DATABASE_URL configured in prisma.config.ts (Prisma 7+)
+}
+
+// ============================================
+// EXAM
+// ============================================
+model Exam {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  questions   Question[]
+  progress    StudyProgress[]
+}
+
+// ============================================
+// QUESTION
+// ============================================
+model Question {
+  id        String   @id @default(cuid())
+  examId    String
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  number    Int
+  data      Json     // Full question data as JSONB
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  answers   Answer[]
+  srsCard   SrsCard?
+  bookmarks Bookmark[]
+
+  // Constraints
+  @@unique([examId, number])
+  @@index([examId])
+}
+
+// ============================================
+// STUDY PROGRESS (Snapshot for export/import)
+// ============================================
+model StudyProgress {
+  id        String   @id @default(cuid())
+  examId    String
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  name      String   @default(dbgenerated("'Snapshot ' || to_char(now(), 'YYYY-MM-DD HH24:MI')"))
+  data      Json     // Full progress snapshot
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([examId])
+}
+
+// ============================================
+// ANSWER (History of answers)
+// ============================================
+model Answer {
+  id          String   @id @default(cuid())
+  questionId  String
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selected    String[] // Array of selected options ["A", "C"]
+  correct     Boolean
+  timeSpentMs Int?
+  answeredAt  DateTime @default(now())
+
+  @@index([questionId])
+  @@index([answeredAt])
+}
+
+// ============================================
+// SRS CARD (Spaced repetition state)
+// ============================================
+model SrsCard {
+  id           String    @id @default(cuid())
+  questionId   String    @unique
+  question     Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  easeFactor   Float     @default(2.5)
+  intervalDays Int       @default(0)
+  repetitions  Int       @default(0)
+  nextReview   DateTime  @default(now())
+  lastReview   DateTime?
+  lastGrade    Int?      // 0-5 scale
+
+  @@index([nextReview])
+}
+
+// ============================================
+// BOOKMARK
+// ============================================
+model Bookmark {
+  id         String   @id @default(cuid())
+  questionId String   @unique
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+}
+
+// ============================================
+// SETTINGS (Key-value store)
+// ============================================
+model Settings {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
