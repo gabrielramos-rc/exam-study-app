@@ -9,6 +9,7 @@ permissions:
 on:
   pull_request:
     branches: [main, master, dev]
+    # Skip for Dependabot - ci.yml and dependency-review.yml already cover it
     paths:
       - 'src/**'
       - 'package*.json'
@@ -26,6 +27,7 @@ jobs:
   all-checks-passed:
     name: All Checks Passed
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     needs: [ci-complete, security-complete]
     steps:
       - name: All checks passed
@@ -34,6 +36,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -63,6 +66,7 @@ jobs:
   security-complete:
     name: Security Checks
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
