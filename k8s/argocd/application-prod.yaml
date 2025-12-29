@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: exam-study-app-prod
+  namespace: argocd
+  labels:
+    environment: prod
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Notifications (if configured)
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: deployments
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: deployments
+spec:
+  project: exam-study
+
+  # Source: Prod overlay
+  source:
+    repoURL: https://github.com/gabrielramos-rc/exam-study-app.git
+    targetRevision: main
+    path: k8s/overlays/prod
+
+  # Destination: Prod namespace
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: exam-study-prod
+
+  # PROD: Manual sync only - requires explicit approval
+  syncPolicy:
+    # NO automated sync for production!
+    # automated: <-- intentionally omitted
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+
+  # Ignore differences that change frequently
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: batch
+      kind: Job
+      jsonPointers:
+        - /spec/selector
+        - /spec/template/metadata/labels
+
+  # Revision history limit
+  revisionHistoryLimit: 10

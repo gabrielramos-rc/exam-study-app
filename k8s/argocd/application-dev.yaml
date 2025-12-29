@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: exam-study-app-dev
+  namespace: argocd
+  labels:
+    environment: dev
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # ArgoCD Image Updater annotations
+    argocd-image-updater.argoproj.io/image-list: app=ghcr.io/gabrielramos-rc/exam-study-app
+    argocd-image-updater.argoproj.io/app.update-strategy: latest
+    argocd-image-updater.argoproj.io/app.allow-tags: regexp:^(dev|sha-.*|latest)$
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+spec:
+  project: exam-study
+
+  # Source: Dev overlay (watches dev branch)
+  source:
+    repoURL: https://github.com/gabrielramos-rc/exam-study-app.git
+    targetRevision: dev
+    path: k8s/overlays/dev
+
+  # Destination: Dev namespace
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: exam-study-dev
+
+  # DEV: Auto-sync enabled - deploys automatically on every push
+  syncPolicy:
+    automated:
+      prune: true        # Delete resources removed from Git
+      selfHeal: true     # Revert manual changes
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Ignore differences that change frequently
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: batch
+      kind: Job
+      jsonPointers:
+        - /spec/selector
+        - /spec/template/metadata/labels

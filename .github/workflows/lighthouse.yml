@@ -1,0 +1,104 @@
+name: Lighthouse CI
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main, master, dev]
+    paths:
+      - 'src/**'
+      - 'prisma/**'
+      - 'package.json'
+      - 'lighthouserc.json'
+  push:
+    branches: [main, master, dev]
+    paths:
+      - 'src/**'
+      - 'prisma/**'
+      - 'package.json'
+      - 'lighthouserc.json'
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-prerequisites:
+    runs-on: ubuntu-latest
+    outputs:
+      has-prisma: ${{ steps.check.outputs.has-prisma }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for Prisma schema
+        id: check
+        run: |
+          if [ -f "prisma/schema.prisma" ]; then
+            echo "has-prisma=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-prisma=false" >> $GITHUB_OUTPUT
+            echo "::warning::Prisma schema not found, skipping Lighthouse CI"
+          fi
+
+  lighthouse:
+    needs: check-prerequisites
+    if: needs.check-prerequisites.outputs.has-prisma == 'true'
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: study
+          POSTGRES_PASSWORD: study
+          POSTGRES_DB: study
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://study:study@localhost:5432/study
+
+      - name: Build application
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://study:study@localhost:5432/study
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ./lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+        env:
+          DATABASE_URL: postgresql://study:study@localhost:5432/study
+
+      - name: Upload Lighthouse report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/
+          retention-days: 30

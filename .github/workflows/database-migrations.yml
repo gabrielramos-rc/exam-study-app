@@ -1,0 +1,74 @@
+name: Database Migrations
+
+on:
+  pull_request:
+    branches: [main, master, dev]
+    paths:
+      - 'prisma/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrations-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-schema:
+    runs-on: ubuntu-latest
+    outputs:
+      has-schema: ${{ steps.check.outputs.has-schema }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for Prisma schema
+        id: check
+        run: |
+          if [ -f "prisma/schema.prisma" ]; then
+            echo "has-schema=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-schema=false" >> $GITHUB_OUTPUT
+            echo "::warning::Prisma schema not found, skipping migrations"
+          fi
+
+  migrate:
+    needs: check-schema
+    if: needs.check-schema.outputs.has-schema == 'true'
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: study
+          POSTGRES_PASSWORD: study
+          POSTGRES_DB: study
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://study:study@localhost:5432/study
+
+      - name: Validate Prisma schema
+        run: npx prisma validate
+        env:
+          DATABASE_URL: postgresql://study:study@localhost:5432/study

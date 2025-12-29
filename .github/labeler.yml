@@ -1,0 +1,79 @@
+# PR Labeler configuration
+# Labels are applied based on which files are changed in the PR
+
+# Documentation changes
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+          - '.claude/**'
+
+# Frontend changes
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/components/**'
+          - 'src/app/**/*.tsx'
+          - 'src/styles/**'
+          - '**/*.css'
+
+# Backend/API changes
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/app/api/**'
+          - 'src/lib/**'
+
+# Database changes
+database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'prisma/**'
+
+# Configuration changes
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.json'
+          - '*.config.*'
+          - '.env*'
+          - 'tsconfig.json'
+
+# Docker/Infrastructure changes
+infrastructure:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'Dockerfile'
+          - 'docker-compose*.yml'
+          - '.github/**'
+          - 'scripts/**'
+
+# Kubernetes changes
+kubernetes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'k8s/**'
+
+# ArgoCD/GitOps changes
+gitops:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'k8s/argocd/**'
+          - 'k8s/overlays/**'
+
+# Dependencies
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
+
+# Tests
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.test.*'
+          - '**/*.spec.*'
+          - '__tests__/**'
+          - 'tests/**'

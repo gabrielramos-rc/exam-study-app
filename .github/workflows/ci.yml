@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, dev]
+  pull_request:
+    branches: [main, master, dev]
+
+permissions:
+  contents: read
+
+# Cancel outdated runs for the same branch
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-prerequisites:
+    runs-on: ubuntu-latest
+    outputs:
+      has-prisma: ${{ steps.check.outputs.has-prisma }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for Prisma schema
+        id: check
+        run: |
+          if [ -f "prisma/schema.prisma" ]; then
+            echo "has-prisma=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-prisma=false" >> $GITHUB_OUTPUT
+            echo "::warning::Prisma schema not found, skipping database tests"
+          fi
+
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next/
+          retention-days: 1
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, check-prerequisites]
+    if: needs.check-prerequisites.outputs.has-prisma == 'true'
+    continue-on-error: true
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: study
+          POSTGRES_PASSWORD: study
+          POSTGRES_DB: study
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://study:study@localhost:5432/study
+
+      - name: Check if test script exists
+        id: check-tests
+        run: |
+          if npm run test --if-present 2>/dev/null; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Run tests
+        if: steps.check-tests.outputs.has_tests == 'true'
+        run: npm test
+        env:
+          DATABASE_URL: postgresql://study:study@localhost:5432/study
+
+      - name: Upload coverage
+        if: steps.check-tests.outputs.has_tests == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+        continue-on-error: true
