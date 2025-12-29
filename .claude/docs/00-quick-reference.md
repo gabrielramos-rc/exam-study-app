@@ -170,6 +170,7 @@ interface QuestionData {
 ## API Endpoints
 
 ### Health Check
+
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
 | GET | `/api/health` | Kubernetes liveness/readiness probe |

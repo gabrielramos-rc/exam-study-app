@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
+  pool: Pool | undefined;
 };
 
 function createPrismaClient(): PrismaClient {
@@ -16,6 +17,7 @@ function createPrismaClient(): PrismaClient {
   }
 
   const pool = new Pool({ connectionString });
+  globalForPrisma.pool = pool;
   const adapter = new PrismaPg(pool);
 
   return new PrismaClient({
@@ -28,6 +30,17 @@ export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
+}
+
+/**
+ * Gracefully disconnect Prisma and close the connection pool.
+ * Use this for clean shutdown on SIGTERM/SIGINT.
+ */
+export async function disconnectPrisma(): Promise<void> {
+  await prisma.$disconnect();
+  if (globalForPrisma.pool) {
+    await globalForPrisma.pool.end();
+  }
 }
 
 export default prisma;

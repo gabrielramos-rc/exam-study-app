@@ -17,11 +17,13 @@ No authentication required (single-user application).
 ### Health Check
 
 #### Get Health Status
+
 ```http
 GET /api/health
 ```
 
-**Response (Healthy - 200)**
+#### Response (Healthy - 200)
+
 ```json
 {
   "status": "healthy",
@@ -30,7 +32,8 @@ GET /api/health
 }
 ```
 
-**Response (Unhealthy - 503)**
+#### Response (Unhealthy - 503)
+
 ```json
 {
   "status": "unhealthy",

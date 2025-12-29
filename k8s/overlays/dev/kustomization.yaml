@@ -26,7 +26,7 @@ patches:
     patch: |
       - op: replace
         path: /spec/template/spec/initContainers/0/command
-        value: ['sh', '-c', 'until nc -z postgres-postgresql 5432; do echo waiting for postgres; sleep 2; done']
+        value: ['sh', '-c', 'timeout 120 sh -c "until nc -z postgres-postgresql 5432; do echo waiting for postgres; sleep 2; done"']
       - op: replace
         path: /spec/template/spec/containers/0/env
         value:
@@ -47,7 +47,7 @@ patches:
     patch: |
       - op: replace
         path: /spec/template/spec/initContainers/0/command
-        value: ['sh', '-c', 'until nc -z postgres-postgresql 5432; do echo waiting for postgres; sleep 2; done']
+        value: ['sh', '-c', 'timeout 120 sh -c "until nc -z postgres-postgresql 5432; do echo waiting for postgres; sleep 2; done"']
       - op: replace
         path: /spec/template/spec/containers/0/env
         value:

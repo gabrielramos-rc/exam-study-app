@@ -14,7 +14,7 @@ If you discover a security vulnerability in this project, please report it by op
 
 ### PostgreSQL Client Dependencies (pg)
 
-**Assessment Date:** December 2024
+**Assessment Date:** December 2025
 
 This application uses Prisma 7 with `@prisma/adapter-pg` and the `pg` package for PostgreSQL connectivity. OpenSSF Scorecard analysis has identified quality/maintenance concerns in transitive dependencies within the `pg` dependency tree:
 

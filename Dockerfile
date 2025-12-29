@@ -37,11 +37,12 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Create directories for volumes
-RUN mkdir -p /app/uploads /app/public/images
-
 # Run as non-root user (CKS best practice)
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+
+# Create directories for volumes with proper ownership
+RUN mkdir -p /app/uploads /app/public/images && chown -R nextjs:nodejs /app/uploads /app/public/images
+
 USER nextjs
 
 EXPOSE 3000
