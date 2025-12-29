@@ -1,5 +1,8 @@
 name: PR Status Check
 
+permissions:
+  contents: read
+
 # This workflow aggregates all PR checks into a single required status
 # Configure this as a required check in branch protection rules
 
