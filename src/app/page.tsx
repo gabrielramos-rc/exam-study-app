@@ -1,7 +1,7 @@
 import { MainLayout } from "@/components/layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Brain, TrendingUp, Plus } from "lucide-react";
+import { BookOpen, Brain, Clock, Target, Plus } from "lucide-react";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -44,7 +44,7 @@ export default function HomePage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Due for Review</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">0</div>
@@ -56,7 +56,7 @@ export default function HomePage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Accuracy</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">--%</div>

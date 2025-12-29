@@ -61,16 +61,13 @@ helm repo add grafana https://grafana.github.io/helm-charts 2>/dev/null || true
 helm repo add jetstack https://charts.jetstack.io 2>/dev/null || true
 helm repo add runix https://helm.runix.net 2>/dev/null || true
 helm repo add jaegertracing https://jaegertracing.github.io/helm-charts 2>/dev/null || true
+helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null || true
 helm repo update
 echo -e "${GREEN}✓ Helm repos added${NC}"
 
 # Step 1.5: Install PostgreSQL in dev and prod namespaces
 echo ""
 echo -e "${YELLOW}Step 1.5: Installing PostgreSQL databases...${NC}"
-
-# Add Bitnami repo if not already added
-helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null || true
-helm repo update
 
 # Source shared PostgreSQL setup function
 SCRIPT_DIR_TEMP="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -19,14 +19,14 @@ export const navItems: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: "Exams",
-    href: "/admin/exams",
-    icon: BookOpen,
-  },
-  {
     title: "Admin",
     href: "/admin",
     icon: FolderCog,
+  },
+  {
+    title: "Exams",
+    href: "/admin/exams",
+    icon: BookOpen,
   },
   {
     title: "Settings",
