@@ -323,7 +323,7 @@ spec:
 
 ```dockerfile
 # Build stage
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -341,7 +341,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production stage
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 
 WORKDIR /app
 
@@ -356,11 +356,15 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Create directories for volumes
-RUN mkdir -p /app/uploads /app/public/images
+# Remove npm from production image (not needed, reduces attack surface - CKS best practice)
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Run as non-root user (CKS best practice)
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+
+# Create directories for volumes with proper ownership
+RUN mkdir -p /app/uploads /app/public/images && chown -R nextjs:nodejs /app/uploads /app/public/images
+
 USER nextjs
 
 EXPOSE 3000

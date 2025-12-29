@@ -35,6 +35,10 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
+# Remove npm from production image (not needed, reduces attack surface - CKS best practice)
+# This also removes the vulnerable glob package bundled with npm
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 # Run as non-root user (CKS best practice)
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 

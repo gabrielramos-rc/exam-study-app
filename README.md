@@ -24,7 +24,7 @@ A self-hosted Next.js web application for studying certification exam questions 
 
 ### Prerequisites
 
-- Node.js 22 LTS
+- Node.js 24 LTS
 - Docker and Docker Compose
 - npm
 
