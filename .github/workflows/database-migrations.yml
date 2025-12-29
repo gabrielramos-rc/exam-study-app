@@ -6,6 +6,9 @@ on:
     paths:
       - 'prisma/**'
 
+permissions:
+  contents: read
+
 concurrency:
   group: migrations-${{ github.ref }}
   cancel-in-progress: true
