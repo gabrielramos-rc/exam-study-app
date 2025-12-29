@@ -85,7 +85,19 @@ helm repo update
 # Function to setup PostgreSQL in a namespace
 setup_postgres() {
     local NAMESPACE=$1
-    local PORT=$2
+
+    # Validate namespace parameter
+    if [[ -z "$NAMESPACE" ]]; then
+        echo -e "${RED}Error: NAMESPACE parameter is required${NC}"
+        return 1
+    fi
+
+    # Validate namespace pattern (lowercase letters, numbers, hyphens, must start with letter)
+    if [[ ! "$NAMESPACE" =~ ^[a-z][a-z0-9-]*$ ]]; then
+        echo -e "${RED}Error: Invalid namespace format: $NAMESPACE${NC}"
+        echo -e "${RED}Namespace must start with a letter and contain only lowercase letters, numbers, and hyphens${NC}"
+        return 1
+    fi
 
     echo ""
     echo -e "${YELLOW}Setting up PostgreSQL in ${NAMESPACE}...${NC}"
@@ -147,8 +159,8 @@ setup_postgres() {
 kubectl create namespace exam-study-dev --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace exam-study-prod --dry-run=client -o yaml | kubectl apply -f -
 
-setup_postgres "exam-study-dev" "5432"
-setup_postgres "exam-study-prod" "5433"
+setup_postgres "exam-study-dev"
+setup_postgres "exam-study-prod"
 
 echo -e "${GREEN}✓ PostgreSQL installed in both namespaces${NC}"
 
@@ -495,16 +507,16 @@ echo "  Host:     postgres-postgresql.exam-study-dev"
 echo "  Port:     5432 (cluster) / 5432 (port-forward)"
 echo "  Database: study"
 echo "  Username: study"
-DEV_PW=$(kubectl get secret postgres-credentials -n exam-study-dev -o jsonpath='{.data.postgres-password}' 2>/dev/null | base64 -d || echo "N/A")
-echo "  Password: ${DEV_PW}"
+echo "  Password: (stored in secret)"
+echo "  Retrieve: kubectl get secret postgres-credentials -n exam-study-dev -o jsonpath='{.data.postgres-password}' | base64 -d"
 echo ""
 echo -e "${BLUE}PostgreSQL (Prod - exam-study-prod):${NC}"
 echo "  Host:     postgres-postgresql.exam-study-prod"
 echo "  Port:     5432 (cluster) / 5433 (port-forward)"
 echo "  Database: study"
 echo "  Username: study"
-PROD_PW=$(kubectl get secret postgres-credentials -n exam-study-prod -o jsonpath='{.data.postgres-password}' 2>/dev/null | base64 -d || echo "N/A")
-echo "  Password: ${PROD_PW}"
+echo "  Password: (stored in secret)"
+echo "  Retrieve: kubectl get secret postgres-credentials -n exam-study-prod -o jsonpath='{.data.postgres-password}' | base64 -d"
 echo ""
 echo -e "${BLUE}ArgoCD:${NC}"
 echo "  URL:      https://localhost:8080"
