@@ -48,6 +48,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Prisma client
+        run: npx prisma generate
+        continue-on-error: true
+
       - name: Run linter
         run: npm run lint
 
