@@ -7,22 +7,59 @@ metadata:
 # Reference the base configuration
 resources:
   - ../../base
-  - namespace.yaml
   - service-nodeport.yaml
 
 # Override namespace for all resources
 namespace: exam-study-dev
 
 # Add dev-specific labels
-commonLabels:
-  environment: dev
+labels:
+  - pairs:
+      environment: dev
 
-# Add name suffix to avoid conflicts
-nameSuffix: ""
-
-# Patches for dev-specific changes
+# Patches for dev-specific changes (consolidated)
 patches:
-  # Use dev image tag
+  # Helm PostgreSQL integration - update init container and replace env array
+  - target:
+      kind: Deployment
+      name: exam-study-app
+    patch: |
+      - op: replace
+        path: /spec/template/spec/initContainers/0/command
+        value: ['sh', '-c', 'timeout 120 sh -c "until nc -z postgres-postgresql 5432; do echo waiting for postgres; sleep 2; done"']
+      - op: replace
+        path: /spec/template/spec/containers/0/env
+        value:
+          - name: HOSTNAME
+            value: "0.0.0.0"
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-credentials
+                key: postgres-password
+          - name: DATABASE_URL
+            value: "postgresql://study:$(POSTGRES_PASSWORD)@postgres-postgresql:5432/study"
+
+  # Helm PostgreSQL integration - migration job
+  - target:
+      kind: Job
+      name: db-migration
+    patch: |
+      - op: replace
+        path: /spec/template/spec/initContainers/0/command
+        value: ['sh', '-c', 'timeout 120 sh -c "until nc -z postgres-postgresql 5432; do echo waiting for postgres; sleep 2; done"']
+      - op: replace
+        path: /spec/template/spec/containers/0/env
+        value:
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-credentials
+                key: postgres-password
+          - name: DATABASE_URL
+            value: "postgresql://study:$(POSTGRES_PASSWORD)@postgres-postgresql:5432/study"
+
+  # Use dev image tag, lower replicas, and Never pull for local images
   - target:
       kind: Deployment
       name: exam-study-app
@@ -30,6 +67,9 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/image
         value: ghcr.io/gabrielramos-rc/exam-study-app:dev
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
       - op: replace
         path: /spec/replicas
         value: 1
@@ -52,7 +92,7 @@ patches:
         path: /spec/template/spec/containers/0/resources/limits/cpu
         value: "250m"
 
-  # Update migration job image
+  # Update migration job image with Never pull for local images
   - target:
       kind: Job
       name: db-migration
@@ -60,6 +100,9 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/image
         value: ghcr.io/gabrielramos-rc/exam-study-app:dev
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
 
   # Smaller PVC for dev
   - target:
@@ -70,14 +113,7 @@ patches:
         path: /spec/resources/requests/storage
         value: 1Gi
 
-# ConfigMap overrides for dev
-configMapGenerator:
-  - name: exam-study-config
-    behavior: merge
-    literals:
-      - NODE_ENV=development
-
-# Image tag override (alternative method)
+# Image tag override
 images:
   - name: ghcr.io/gabrielramos-rc/exam-study-app
     newTag: dev

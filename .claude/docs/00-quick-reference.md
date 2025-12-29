@@ -169,6 +169,12 @@ interface QuestionData {
 
 ## API Endpoints
 
+### Health Check
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/health` | Kubernetes liveness/readiness probe |
+
 ### Exams
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
@@ -291,12 +297,27 @@ function calculateSM2(
 
 ---
 
+## Docker Commands
+
+```bash
+# Build dev image
+docker build -t ghcr.io/gabrielramos-rc/exam-study-app:dev .
+
+# Build prod image
+docker build -t ghcr.io/gabrielramos-rc/exam-study-app:latest .
+
+# Run locally (for testing)
+docker run -p 3000:3000 -e DATABASE_URL="..." ghcr.io/gabrielramos-rc/exam-study-app:dev
+```
+
+---
+
 ## Kubernetes
 
 ```bash
 # Quick start
 ./scripts/setup-helm-essentials.sh       # Install Helm charts (includes PostgreSQL)
-docker build -t exam-study-app:latest .
+docker build -t ghcr.io/gabrielramos-rc/exam-study-app:dev .
 kubectl apply -k k8s/overlays/dev/
 kubectl get pods -n exam-study-dev -w
 open http://localhost:30001               # Dev

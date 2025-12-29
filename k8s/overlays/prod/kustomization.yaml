@@ -7,19 +7,59 @@ metadata:
 # Reference the base configuration
 resources:
   - ../../base
-  - namespace.yaml
   - service-nodeport.yaml
 
 # Override namespace for all resources
 namespace: exam-study-prod
 
 # Add prod-specific labels
-commonLabels:
-  environment: prod
+labels:
+  - pairs:
+      environment: prod
 
-# Patches for prod-specific changes
+# Patches for prod-specific changes (consolidated)
 patches:
-  # Use stable image tag
+  # Helm PostgreSQL integration - update init container and replace env array
+  - target:
+      kind: Deployment
+      name: exam-study-app
+    patch: |
+      - op: replace
+        path: /spec/template/spec/initContainers/0/command
+        value: ['sh', '-c', 'timeout 120 sh -c "until nc -z postgres-postgresql 5432; do echo waiting for postgres; sleep 2; done"']
+      - op: replace
+        path: /spec/template/spec/containers/0/env
+        value:
+          - name: HOSTNAME
+            value: "0.0.0.0"
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-credentials
+                key: postgres-password
+          - name: DATABASE_URL
+            value: "postgresql://study:$(POSTGRES_PASSWORD)@postgres-postgresql:5432/study"
+
+  # Helm PostgreSQL integration - migration job
+  - target:
+      kind: Job
+      name: db-migration
+    patch: |
+      - op: replace
+        path: /spec/template/spec/initContainers/0/command
+        value: ['sh', '-c', 'timeout 120 sh -c "until nc -z postgres-postgresql 5432; do echo waiting for postgres; sleep 2; done"']
+      - op: replace
+        path: /spec/template/spec/containers/0/env
+        value:
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-credentials
+                key: postgres-password
+          - name: DATABASE_URL
+            value: "postgresql://study:$(POSTGRES_PASSWORD)@postgres-postgresql:5432/study"
+
+  # Use stable image tag and higher replicas for prod
   - target:
       kind: Deployment
       name: exam-study-app
@@ -28,11 +68,11 @@ patches:
         path: /spec/template/spec/containers/0/image
         value: ghcr.io/gabrielramos-rc/exam-study-app:latest
       - op: replace
-        path: /spec/replicas
-        value: 2
-      - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: IfNotPresent
+      - op: replace
+        path: /spec/replicas
+        value: 2
 
   # Higher resources for prod
   - target:
@@ -51,6 +91,18 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/resources/limits/cpu
         value: "500m"
+
+  # Update migration job image
+  - target:
+      kind: Job
+      name: db-migration
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: ghcr.io/gabrielramos-rc/exam-study-app:latest
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
 
   # Higher resources for postgres in prod
   - target:
@@ -72,13 +124,6 @@ patches:
       - op: replace
         path: /spec/resources/requests/storage
         value: 10Gi
-
-# ConfigMap overrides for prod
-configMapGenerator:
-  - name: exam-study-config
-    behavior: merge
-    literals:
-      - NODE_ENV=production
 
 # Image tag override
 images:
