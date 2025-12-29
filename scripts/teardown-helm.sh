@@ -30,6 +30,7 @@ echo "  - OPA Gatekeeper"
 echo "  - Sealed Secrets"
 echo "  - Trivy Operator"
 echo "  - Jaeger"
+echo "  - PostgreSQL (Dev + Prod)"
 echo ""
 
 read -p "Are you sure you want to continue? (y/n): " CONFIRM
@@ -83,6 +84,17 @@ fi
 if helm status pgadmin -n pgadmin &> /dev/null; then
     helm uninstall pgadmin -n pgadmin
     echo -e "${GREEN}✓ pgAdmin uninstalled${NC}"
+fi
+
+# Uninstall PostgreSQL from both namespaces
+if helm status postgres -n exam-study-dev &> /dev/null; then
+    helm uninstall postgres -n exam-study-dev
+    echo -e "${GREEN}✓ PostgreSQL (dev) uninstalled${NC}"
+fi
+
+if helm status postgres -n exam-study-prod &> /dev/null; then
+    helm uninstall postgres -n exam-study-prod
+    echo -e "${GREEN}✓ PostgreSQL (prod) uninstalled${NC}"
 fi
 
 if helm status kiali-server -n istio-system &> /dev/null; then
@@ -149,6 +161,8 @@ kubectl delete namespace falco --wait=false 2>/dev/null || true
 kubectl delete namespace gatekeeper-system --wait=false 2>/dev/null || true
 kubectl delete namespace trivy-system --wait=false 2>/dev/null || true
 kubectl delete namespace tracing --wait=false 2>/dev/null || true
+kubectl delete namespace exam-study-dev --wait=false 2>/dev/null || true
+kubectl delete namespace exam-study-prod --wait=false 2>/dev/null || true
 
 # Clean up cluster resources
 echo ""

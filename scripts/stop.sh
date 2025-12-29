@@ -63,10 +63,20 @@ else
     echo "  Jaeger port-forward was not running"
 fi
 
-# PostgreSQL (in case it was running)
-if pgrep -f "port-forward.*postgres" > /dev/null; then
-    pkill -f "port-forward.*postgres"
-    echo -e "${GREEN}✓ PostgreSQL port-forward stopped${NC}"
+# PostgreSQL Dev
+if pgrep -f "port-forward.*postgres-postgresql.*exam-study-dev" > /dev/null; then
+    pkill -f "port-forward.*postgres-postgresql.*exam-study-dev"
+    echo -e "${GREEN}✓ PostgreSQL Dev port-forward stopped${NC}"
+else
+    echo "  PostgreSQL Dev port-forward was not running"
+fi
+
+# PostgreSQL Prod
+if pgrep -f "port-forward.*postgres-postgresql.*exam-study-prod" > /dev/null; then
+    pkill -f "port-forward.*postgres-postgresql.*exam-study-prod"
+    echo -e "${GREEN}✓ PostgreSQL Prod port-forward stopped${NC}"
+else
+    echo "  PostgreSQL Prod port-forward was not running"
 fi
 
 echo ""

@@ -497,6 +497,29 @@ kubectl set image deployment/exam-study-app app=exam-study-app:v2 -n exam-study
 
 ## Database Management
 
+### PostgreSQL (via Helm)
+
+PostgreSQL is installed via the Bitnami Helm chart in each namespace:
+
+```bash
+# Check PostgreSQL status
+kubectl get pods -n exam-study-dev -l app.kubernetes.io/name=postgresql
+kubectl get pods -n exam-study-prod -l app.kubernetes.io/name=postgresql
+
+# View credentials
+kubectl get secret postgres-credentials -n exam-study-dev -o jsonpath='{.data.postgres-password}' | base64 -d
+
+# Database shell (dev)
+kubectl exec -it postgres-postgresql-0 -n exam-study-dev -- psql -U study -d study
+
+# Database shell (prod)
+kubectl exec -it postgres-postgresql-0 -n exam-study-prod -- psql -U study -d study
+
+# Port-forward (dev on 5432, prod on 5433)
+kubectl port-forward svc/postgres-postgresql -n exam-study-dev 5432:5432 &
+kubectl port-forward svc/postgres-postgresql -n exam-study-prod 5433:5432 &
+```
+
 ### Run Migrations
 
 ```bash

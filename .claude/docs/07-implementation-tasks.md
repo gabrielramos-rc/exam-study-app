@@ -46,21 +46,21 @@ Before starting this phase, read:
 
 ### 1.4 PostgreSQL Helm Setup
 **Read:** `08-deployment-guide.md` (Kubernetes Configuration section)
-- [ ] Enable Kubernetes in Docker Desktop
-- [ ] Create namespaces (`exam-study-dev`, `exam-study-prod`)
-- [ ] Update `scripts/setup-helm-essentials.sh` and `scripts/setup-helm.sh` :
-  - [ ] Add Bitnami Helm repo
-  - [ ] Generate random passwords with `openssl rand`
-  - [ ] Store credentials in Kubernetes secrets (`postgres-credentials`)
-  - [ ] Install PostgreSQL via Helm to both namespaces
-  - [ ] Display credentials summary
-- [ ] Update `scripts/teardown-helm-essentials.sh` and `scripts/teardown-helm.sh` for cleanup
-- [ ] Update `scripts/start.sh` with PostgreSQL port-forwards:
-  - [ ] Dev database on port 5432
-  - [ ] Prod database on port 5433
-- [ ] Update `scripts/stop.sh`
-- [ ] Run initial Prisma migration (`npx prisma migrate dev --name init`)
-- [ ] Verify with `npx prisma studio`
+- [x] Enable Kubernetes in Docker Desktop
+- [x] Create namespaces (`exam-study-dev`, `exam-study-prod`)
+- [x] Update `scripts/setup-helm-essentials.sh` and `scripts/setup-helm.sh`:
+  - [x] Add Bitnami Helm repo
+  - [x] Generate random passwords with `openssl rand`
+  - [x] Store credentials in Kubernetes secrets (`postgres-credentials`)
+  - [x] Install PostgreSQL via Helm to both namespaces
+  - [x] Display credentials summary
+- [x] Update `scripts/teardown-helm-essentials.sh` and `scripts/teardown-helm.sh` for cleanup
+- [x] Update `scripts/start.sh` with PostgreSQL port-forwards:
+  - [x] Dev database on port 5432
+  - [x] Prod database on port 5433
+- [x] Update `scripts/stop.sh`
+- [x] Run initial Prisma migration (`npx prisma migrate dev --name init`)
+- [x] Verify with `npx prisma studio`
 
 ### 1.5 App Kubernetes Setup
 **Read:** `08-deployment-guide.md` (Kubernetes Configuration section)
