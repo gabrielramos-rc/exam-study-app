@@ -3,10 +3,16 @@ name: CodeQL
 on:
   push:
     branches: [main, master, dev]
+    paths:
+      - 'src/**'
+      - '.github/workflows/**'
   pull_request:
     branches: [main, master, dev]
+    paths:
+      - 'src/**'
+      - '.github/workflows/**'
   schedule:
-    - cron: '0 8 * * 1' # Every Monday at 8am UTC
+    - cron: '0 8 * * 1' # Every Monday at 8am UTC (full scan)
 
 concurrency:
   group: codeql-${{ github.ref }}
