@@ -248,9 +248,10 @@ jobs:
 
             ---
             *Review by Claude · [View workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*" \
-              -f 'comments[0][path]=src/file.ts' \
-              -f 'comments[0][line]=42' \
+              -f 'comments[0][path]=<FILE_PATH>' \
+              -f 'comments[0][line]=<LINE_NUMBER>' \
               -f 'comments[0][body]=🔴 **Critical - Security Issue**
+            # NOTE: Replace <FILE_PATH>, <LINE_NUMBER>, and body content with actual values from your findings
 
             [Detailed explanation]
 

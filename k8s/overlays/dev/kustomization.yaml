@@ -32,13 +32,11 @@ patches:
         value:
           - name: HOSTNAME
             value: "0.0.0.0"
-          - name: POSTGRES_PASSWORD
+          - name: DATABASE_URL
             valueFrom:
               secretKeyRef:
                 name: postgres-credentials
-                key: postgres-password
-          - name: DATABASE_URL
-            value: "postgresql://study:$(POSTGRES_PASSWORD)@postgres-postgresql:5432/study"
+                key: database-url
 
   # Helm PostgreSQL integration - migration job
   - target:
@@ -51,13 +49,11 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/env
         value:
-          - name: POSTGRES_PASSWORD
+          - name: DATABASE_URL
             valueFrom:
               secretKeyRef:
                 name: postgres-credentials
-                key: postgres-password
-          - name: DATABASE_URL
-            value: "postgresql://study:$(POSTGRES_PASSWORD)@postgres-postgresql:5432/study"
+                key: database-url
 
   # Use dev image tag, lower replicas, and Never pull for local images
   - target:
