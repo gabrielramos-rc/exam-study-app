@@ -33,36 +33,47 @@ Before starting this phase, read:
 - [x] Install core components: Button, Card, Badge, Input, Dialog
 - [x] Set up global CSS variables
 
-### 1.3 Database Setup
+### 1.3 Database Setup (Prisma Only)
 **Read:** `03-data-schema.md` (full document)
-- [ ] Install Prisma
+- [x] Install Prisma
   ```bash
   npm install prisma @prisma/client
   npx prisma init
   ```
-- [ ] Create `schema.prisma` with all models (copy from `03-data-schema.md`)
-- [ ] Set up Prisma client singleton (`lib/prisma.ts`)
-- [ ] Create initial migration
+- [x] Create `schema.prisma` with all models (copy from `03-data-schema.md`)
+- [x] Set up Prisma client singleton (`lib/prisma.ts`)
+- [x] Generate Prisma client (`npx prisma generate`)
 
-### 1.4 Kubernetes Setup
+### 1.4 PostgreSQL Helm Setup
 **Read:** `08-deployment-guide.md` (Kubernetes Configuration section)
 - [ ] Enable Kubernetes in Docker Desktop
+- [ ] Create namespaces (`exam-study-dev`, `exam-study-prod`)
+- [ ] Update `scripts/setup-helm-essentials.sh` and `scripts/setup-helm.sh` :
+  - [ ] Add Bitnami Helm repo
+  - [ ] Generate random passwords with `openssl rand`
+  - [ ] Store credentials in Kubernetes secrets (`postgres-credentials`)
+  - [ ] Install PostgreSQL via Helm to both namespaces
+  - [ ] Display credentials summary
+- [ ] Update `scripts/teardown-helm-essentials.sh` and `scripts/teardown-helm.sh` for cleanup
+- [ ] Update `scripts/start.sh` with PostgreSQL port-forwards:
+  - [ ] Dev database on port 5432
+  - [ ] Prod database on port 5433
+- [ ] Update `scripts/stop.sh`
+- [ ] Run initial Prisma migration (`npx prisma migrate dev --name init`)
+- [ ] Verify with `npx prisma studio`
+
+### 1.5 App Kubernetes Setup
+**Read:** `08-deployment-guide.md` (Kubernetes Configuration section)
 - [ ] Create `Dockerfile` for Next.js app
 - [ ] Create `k8s/base/` directory structure
-- [ ] Create Namespace manifest (`k8s/base/namespace.yaml`)
-- [ ] Create ConfigMap for app config (`k8s/base/configmap.yaml`)
-- [ ] Create Secret for database credentials (`k8s/base/secret.yaml`)
-- [ ] Create PostgreSQL manifests:
-  - [ ] PersistentVolumeClaim (`k8s/base/postgres/pvc.yaml`)
-  - [ ] Deployment (`k8s/base/postgres/deployment.yaml`)
-  - [ ] Service (`k8s/base/postgres/service.yaml`)
+- [ ] Create ConfigMap for app config (`k8s/base/app/configmap.yaml`)
 - [ ] Create App manifests:
-  - [ ] Deployment (`k8s/base/app/deployment.yaml`)
+  - [ ] Deployment (`k8s/base/app/deployment.yaml`) - references `postgres-credentials` secret
   - [ ] Service (`k8s/base/app/service.yaml`)
 - [ ] Create migration Job (`k8s/base/jobs/migration-job.yaml`)
-- [ ] Test: `kubectl apply -f k8s/base/` and verify app runs
+- [ ] Test: Build image and deploy to dev namespace
 
-### 1.5 Basic Layout
+### 1.6 Basic Layout
 **Read:** `05-frontend-design.md` (Page Layouts section)
 - [ ] Create root layout with providers
 - [ ] Create sidebar navigation component
@@ -71,10 +82,11 @@ Before starting this phase, read:
 
 **Deliverables:**
 - Working Next.js app with Tailwind + shadcn/ui
-- PostgreSQL running in Kubernetes (Docker Desktop)
+- PostgreSQL running via Helm in both dev and prod namespaces
+- Random passwords stored securely in Kubernetes secrets
 - Basic layout with navigation
-- Database migrations working via Kubernetes Job
-- kubectl commands for local development
+- Database migrations applied
+- Setup/teardown scripts for PostgreSQL
 
 ---
 
@@ -565,7 +577,7 @@ Create hands-on exercises for exam prep:
 
 | Phase | Tasks | Priority | Key Docs to Read |
 |-------|-------|----------|------------------|
-| 1. Foundation | 25 | Critical | 02, 03, 05, 08 |
+| 1. Foundation | 27 | Critical | 02, 03, 05, 08 |
 | 2. Admin & Import | 20 | Critical | 03, 04, 06 |
 | 3. Study Features | 22 | Critical | 04, 05, 06 |
 | 4. Spaced Repetition | 15 | High | 03, 04, 06 |
@@ -573,7 +585,7 @@ Create hands-on exercises for exam prep:
 | 6. Polish & PWA | 20 | Medium | 01, 05, 08 |
 | 7. Advanced K8s (CKAD/CKS) | 85 | Optional | 08, ArgoCD docs |
 
-**Total: ~201 tasks** (116 core + 85 Kubernetes/GitOps learning)
+**Total: ~203 tasks** (118 core + 85 Kubernetes/GitOps learning)
 
 ### Phase 7 Breakdown
 
