@@ -66,8 +66,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
+
+// Note: DATABASE_URL is configured in prisma.config.ts (Prisma 7+)
 
 model Exam {
   id          String   @id @default(cuid())
@@ -293,28 +294,30 @@ function calculateSM2(
 ## Kubernetes
 
 ```bash
-# Quick start (single environment)
+# Quick start
+./scripts/setup-helm-essentials.sh       # Install Helm charts (includes PostgreSQL)
 docker build -t exam-study-app:latest .
-kubectl apply -f k8s/base/
-kubectl get pods -n exam-study -w
-open http://localhost:30000
+kubectl apply -k k8s/overlays/dev/
+kubectl get pods -n exam-study-dev -w
+open http://localhost:30001               # Dev
+open http://localhost:30000               # Prod
 
 # Common commands
-kubectl get all -n exam-study              # View resources
-kubectl logs -f deploy/exam-study-app -n exam-study  # App logs
-kubectl exec -it deploy/postgres -n exam-study -- psql -U study -d study  # DB shell
-kubectl rollout restart deploy/exam-study-app -n exam-study  # Restart app
-kubectl delete namespace exam-study        # Reset everything
+kubectl get all -n exam-study-dev                               # View resources
+kubectl logs -f deploy/exam-study-app -n exam-study-dev         # App logs
+kubectl exec -it deploy/postgres-postgresql -n exam-study-dev -- psql -U study -d study  # DB shell
+kubectl rollout restart deploy/exam-study-app -n exam-study-dev # Restart app
+./scripts/teardown-helm-essentials.sh                           # Remove Helm charts
 ```
 
 ```yaml
-# Key manifests in k8s/base/
-- namespace.yaml     # exam-study namespace
-- configmap.yaml     # App configuration
-- secret.yaml        # Database credentials
-- postgres/          # PostgreSQL Deployment + Service + PVC
-- app/               # App Deployment + Service
-- jobs/              # Migration Job
+# Key manifests
+k8s/base/              # Kustomize base
+k8s/overlays/dev/      # Dev environment (port 30001)
+k8s/overlays/prod/     # Prod environment (port 30000)
+
+# PostgreSQL (via Helm - managed by setup-postgres.sh)
+postgres-credentials   # Secret with random password (auto-generated)
 ```
 
 ---
@@ -380,10 +383,28 @@ gh release create v1.0.0  # → builds :latest
 
 ---
 
+## Prisma Commands
+
+```bash
+npx prisma generate          # Regenerate client after schema changes
+npx prisma migrate dev       # Create and apply migration (dev)
+npx prisma migrate deploy    # Apply migrations (prod)
+npx prisma studio            # Visual database editor at localhost:5555
+npx prisma db push           # Push schema without migrations (prototyping)
+npx prisma format            # Format schema file
+```
+
+---
+
 ## Environment Variables
 
 ```bash
-DATABASE_URL=postgresql://study:study@localhost:5432/study
+# Get DATABASE_URL from Kubernetes secret
+kubectl get secret postgres-credentials -n exam-study-dev \
+  -o jsonpath='{.data.database-url}' | base64 -d
+
+# Or for local development (password from secret)
+DATABASE_URL=postgresql://study:<password>@localhost:5432/study
 NODE_ENV=development
 UPLOAD_MAX_SIZE=52428800  # 50MB
 ```
