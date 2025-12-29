@@ -12,6 +12,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-prerequisites:
+    runs-on: ubuntu-latest
+    outputs:
+      has-prisma: ${{ steps.check.outputs.has-prisma }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for Prisma schema
+        id: check
+        run: |
+          if [ -f "prisma/schema.prisma" ]; then
+            echo "has-prisma=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-prisma=false" >> $GITHUB_OUTPUT
+            echo "::warning::Prisma schema not found, skipping database tests"
+          fi
+
   lint-and-typecheck:
     name: Lint & Type Check
     runs-on: ubuntu-latest
@@ -66,8 +82,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    needs: lint-and-typecheck
-    # Only run if test script exists
+    needs: [lint-and-typecheck, check-prerequisites]
+    if: needs.check-prerequisites.outputs.has-prisma == 'true'
     continue-on-error: true
 
     services:
