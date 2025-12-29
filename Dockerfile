@@ -21,6 +21,8 @@ RUN npm run build
 # Production stage
 FROM node:22-alpine AS runner
 
+RUN npm install -g npm@latest
+
 WORKDIR /app
 
 ENV NODE_ENV=production

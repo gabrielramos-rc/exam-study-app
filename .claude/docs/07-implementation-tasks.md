@@ -378,6 +378,15 @@ Before starting this phase, read:
 - [ ] *(Review)* Test cascade delete behavior (Exam → Questions → Answers)
 - [ ] *(Review)* Validate JSONB data structure tests
 
+### 6.7 Dependency Management
+**Source:** PR #11 review
+- [ ] **[PR #11]** Document dependency update policy/schedule
+  - File: `.claude/docs/08-deployment-guide.md` or new `SECURITY.md`
+  - Note: OpenSSF Scorecard flagged pg package dependencies; establish review cadence
+- [ ] **[PR #11]** Monitor pg package for security updates
+  - Note: pg package has transitive dependencies that may need updates
+  - Suggestion: Subscribe to pg package releases or use Dependabot alerts
+
 **Deliverables:**
 - PWA working with offline support
 - Mobile-responsive design
@@ -550,6 +559,12 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [x] Create CodeQL security analysis (`.github/workflows/codeql.yml`)
 - [x] Create dependency review (`.github/workflows/dependency-review.yml`)
 - [x] Configure Dependabot (`.github/dependabot.yml`)
+- [ ] **[PR #11]** Add npm audit step to CI workflow for ongoing security monitoring
+  - File: `.github/workflows/ci.yml`
+  - Note: Trivy found CVE-2025-64756 in glob package; proactive auditing catches these earlier
+- [ ] **[PR #11]** Configure CodeRabbit for non-default branch reviews
+  - File: `.coderabbit.yaml`
+  - Note: CodeRabbit skipped PR #11 review; enable for `dev` branch
 - [ ] Practice: Create PR and observe checks
 - [ ] Practice: Create release and observe image build
 
@@ -601,10 +616,10 @@ Create hands-on exercises for exam prep:
 | 3. Study Features | 22 | Critical | 04, 05, 06 |
 | 4. Spaced Repetition | 15 | High | 03, 04, 06 |
 | 5. Analytics | 14 | Medium | 03, 04, 05, 06 |
-| 6. Polish & PWA | 20 | Medium | 01, 05, 08 |
+| 6. Polish & PWA | 22 | Medium | 01, 05, 08 |
 | 7. Advanced K8s (CKAD/CKS) | 86 | Optional | 08, ArgoCD docs |
 
-**Total: ~207 tasks** (121 core + 86 Kubernetes/GitOps learning)
+**Total: ~211 tasks** (123 core + 88 Kubernetes/GitOps learning)
 
 ### Phase 7 Breakdown
 
@@ -613,7 +628,7 @@ Create hands-on exercises for exam prep:
 | 7.1-7.11 Basic K8s | 45 | Pending |
 | 7.12 Kustomize | 8 | ✅ Complete |
 | 7.13 ArgoCD GitOps | 12 | Mostly Complete |
-| 7.14 GitHub Actions | 12 | ✅ Complete |
+| 7.14 GitHub Actions | 14 | Mostly Complete |
 | 7.15 Practice Exercises | 10 | Pending |
 
 ---
