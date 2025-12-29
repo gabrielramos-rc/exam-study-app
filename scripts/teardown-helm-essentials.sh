@@ -22,6 +22,7 @@ echo "  - Loki"
 echo "  - Jaeger"
 echo "  - pgAdmin"
 echo "  - cert-manager"
+echo "  - PostgreSQL (Dev + Prod)"
 echo ""
 
 read -p "Are you sure you want to continue? (y/n): " CONFIRM
@@ -82,6 +83,17 @@ if helm status kubernetes-dashboard -n kubernetes-dashboard &> /dev/null; then
     echo -e "${GREEN}✓ Kubernetes Dashboard uninstalled${NC}"
 fi
 
+# Uninstall PostgreSQL from both namespaces
+if helm status postgres -n exam-study-dev &> /dev/null; then
+    helm uninstall postgres -n exam-study-dev
+    echo -e "${GREEN}✓ PostgreSQL (dev) uninstalled${NC}"
+fi
+
+if helm status postgres -n exam-study-prod &> /dev/null; then
+    helm uninstall postgres -n exam-study-prod
+    echo -e "${GREEN}✓ PostgreSQL (prod) uninstalled${NC}"
+fi
+
 # Delete namespaces
 echo ""
 echo -e "${YELLOW}Deleting namespaces...${NC}"
@@ -91,6 +103,8 @@ kubectl delete namespace monitoring --wait=false 2>/dev/null || true
 kubectl delete namespace pgadmin --wait=false 2>/dev/null || true
 kubectl delete namespace cert-manager --wait=false 2>/dev/null || true
 kubectl delete namespace tracing --wait=false 2>/dev/null || true
+kubectl delete namespace exam-study-dev --wait=false 2>/dev/null || true
+kubectl delete namespace exam-study-prod --wait=false 2>/dev/null || true
 
 # Clean up cluster resources
 echo ""

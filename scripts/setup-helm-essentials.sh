@@ -21,6 +21,7 @@ echo "  - Loki (Log Aggregation)"
 echo "  - Jaeger (Distributed Tracing)"
 echo "  - pgAdmin (PostgreSQL UI)"
 echo "  - cert-manager (TLS Certificates)"
+echo "  - PostgreSQL (Dev + Prod databases)"
 echo ""
 echo -e "${YELLOW}Excluded (use setup-helm.sh for full install):${NC}"
 echo "  - Istio, Kiali, Envoy Gateway (Service Mesh)"
@@ -60,8 +61,26 @@ helm repo add grafana https://grafana.github.io/helm-charts 2>/dev/null || true
 helm repo add jetstack https://charts.jetstack.io 2>/dev/null || true
 helm repo add runix https://helm.runix.net 2>/dev/null || true
 helm repo add jaegertracing https://jaegertracing.github.io/helm-charts 2>/dev/null || true
+helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null || true
 helm repo update
 echo -e "${GREEN}✓ Helm repos added${NC}"
+
+# Step 1.5: Install PostgreSQL in dev and prod namespaces
+echo ""
+echo -e "${YELLOW}Step 1.5: Installing PostgreSQL databases...${NC}"
+
+# Source shared PostgreSQL setup function
+SCRIPT_DIR_TEMP="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR_TEMP}/lib/postgres-helpers.sh"
+
+# Setup PostgreSQL in both namespaces
+kubectl create namespace exam-study-dev --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace exam-study-prod --dry-run=client -o yaml | kubectl apply -f -
+
+setup_postgres "exam-study-dev"
+setup_postgres "exam-study-prod"
+
+echo -e "${GREEN}✓ PostgreSQL installed in both namespaces${NC}"
 
 # Step 2: Install ArgoCD
 echo ""
@@ -280,6 +299,22 @@ echo ""
 echo -e "${YELLOW}╔══════════════════════════════════════╗${NC}"
 echo -e "${YELLOW}║           CREDENTIALS                ║${NC}"
 echo -e "${YELLOW}╚══════════════════════════════════════╝${NC}"
+echo ""
+echo -e "${BLUE}PostgreSQL (Dev - exam-study-dev):${NC}"
+echo "  Host:     postgres-postgresql.exam-study-dev"
+echo "  Port:     5432 (cluster) / 5432 (port-forward)"
+echo "  Database: study"
+echo "  Username: study"
+echo "  Password: (stored in secret)"
+echo "  Retrieve: kubectl get secret postgres-credentials -n exam-study-dev -o jsonpath='{.data.postgres-password}' | base64 -d"
+echo ""
+echo -e "${BLUE}PostgreSQL (Prod - exam-study-prod):${NC}"
+echo "  Host:     postgres-postgresql.exam-study-prod"
+echo "  Port:     5432 (cluster) / 5433 (port-forward)"
+echo "  Database: study"
+echo "  Username: study"
+echo "  Password: (stored in secret)"
+echo "  Retrieve: kubectl get secret postgres-credentials -n exam-study-prod -o jsonpath='{.data.postgres-password}' | base64 -d"
 echo ""
 echo -e "${BLUE}ArgoCD:${NC}"
 echo "  URL:      https://localhost:8080"

@@ -169,6 +169,12 @@ interface QuestionData {
 
 ## API Endpoints
 
+### Health Check
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/health` | Kubernetes liveness/readiness probe |
+
 ### Exams
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
@@ -291,12 +297,27 @@ function calculateSM2(
 
 ---
 
+## Docker Commands
+
+```bash
+# Build dev image
+docker build -t ghcr.io/gabrielramos-rc/exam-study-app:dev .
+
+# Build prod image
+docker build -t ghcr.io/gabrielramos-rc/exam-study-app:latest .
+
+# Run locally (for testing)
+docker run -p 3000:3000 -e DATABASE_URL="..." ghcr.io/gabrielramos-rc/exam-study-app:dev
+```
+
+---
+
 ## Kubernetes
 
 ```bash
 # Quick start
 ./scripts/setup-helm-essentials.sh       # Install Helm charts (includes PostgreSQL)
-docker build -t exam-study-app:latest .
+docker build -t ghcr.io/gabrielramos-rc/exam-study-app:dev .
 kubectl apply -k k8s/overlays/dev/
 kubectl get pods -n exam-study-dev -w
 open http://localhost:30001               # Dev
@@ -316,8 +337,30 @@ k8s/base/              # Kustomize base
 k8s/overlays/dev/      # Dev environment (port 30001)
 k8s/overlays/prod/     # Prod environment (port 30000)
 
-# PostgreSQL (via Helm - managed by setup-postgres.sh)
+# PostgreSQL (via Helm - managed by setup-helm-essentials.sh)
 postgres-credentials   # Secret with random password (auto-generated)
+```
+
+### PostgreSQL (Helm)
+
+```bash
+# Setup (included in setup-helm-essentials.sh)
+helm install postgres bitnami/postgresql -n exam-study-dev \
+  --set auth.username=study --set auth.database=study
+
+# Port-forward (automated via start.sh)
+kubectl port-forward svc/postgres-postgresql -n exam-study-dev 5432:5432 &
+kubectl port-forward svc/postgres-postgresql -n exam-study-prod 5433:5432 &
+
+# Get password
+kubectl get secret postgres-credentials -n exam-study-dev \
+  -o jsonpath='{.data.postgres-password}' | base64 -d
+
+# Database shell
+kubectl exec -it postgres-postgresql-0 -n exam-study-dev -- psql -U study -d study
+
+# Verify connection
+kubectl exec postgres-postgresql-0 -n exam-study-dev -- pg_isready -U study
 ```
 
 ---
@@ -408,6 +451,19 @@ DATABASE_URL=postgresql://study:<password>@localhost:5432/study
 NODE_ENV=development
 UPLOAD_MAX_SIZE=52428800  # 50MB
 ```
+
+---
+
+## Layout Components
+
+| Component | Purpose |
+|-----------|---------|
+| `MainLayout` | Main app layout with header, sidebar, mobile nav |
+| `Header` | Sticky header with app logo and theme toggle |
+| `Sidebar` | Desktop navigation (visible on md+) |
+| `MobileNav` | Bottom navigation for mobile |
+| `ThemeToggle` | Dark/light mode toggle button |
+| `Providers` | App-wide providers wrapper (theme) |
 
 ---
 

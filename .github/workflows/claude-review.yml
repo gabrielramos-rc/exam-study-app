@@ -89,9 +89,35 @@ jobs:
 
             ## Your Task
 
-            Review this PR comprehensively. Use `gh pr diff ${{ github.event.pull_request.number }}` to see the changes.
+            Review this PR comprehensively with **smart comment management** to avoid duplicates.
 
-            ### Review Checklist (adapt based on what changed)
+            ---
+
+            ## PHASE 1: Gather Context
+
+            ### Step 1.1: Get existing review comments
+
+            First, fetch ALL existing review comments on this PR to avoid duplicates:
+
+            ```bash
+            gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
+              --paginate \
+              --jq '.[] | {id: .id, path: .path, line: .line, original_line: .original_line, body: .body, in_reply_to_id: .in_reply_to_id, user: .user.login, created_at: .created_at}'
+            ```
+
+            Store these in memory. Group them by conversation (using `in_reply_to_id` to find thread roots).
+
+            ### Step 1.2: Get the diff
+
+            ```bash
+            gh pr diff ${{ github.event.pull_request.number }}
+            ```
+
+            ---
+
+            ## PHASE 2: Review Against Checklist
+
+            Review the diff against these criteria (adapt based on what changed):
 
             **Code Quality:**
             - Clean code principles, DRY, appropriate abstractions
@@ -121,7 +147,6 @@ jobs:
             - Resource limits and requests set
             - Security contexts configured
             - Image tags pinned (not :latest in prod)
-            - Proper labels and selectors
 
             **Dependencies (if package.json changes):**
             - New dependencies justified?
@@ -133,77 +158,194 @@ jobs:
             - Edge cases covered?
 
             ### Special Modes
-
-            - If this is a **Dependabot PR**: Focus ONLY on security implications. Skip style/code quality nitpicks.
-            - If event is **synchronize** (new commits pushed): Focus on what changed since last review. Reference previous review if found.
-
-            ### Output Format
-
-            Structure your review with severity levels:
-
-            ```
-            ## 🔍 Claude PR Review
-
-            **Reviewed:** `<first 7 chars of head SHA>`
-            **Overall:** ✅ Looks Good | ⚠️ Minor Issues | 🚨 Changes Requested
-
-            ### 🔴 Critical (must fix before merge)
-            [Security issues, data loss risks, breaking bugs]
-
-            ### 🟠 High Priority (should fix)
-            [Bugs, significant issues]
-
-            ### 🟡 Suggestions (consider fixing)
-            <details><summary>N suggestions</summary>
-            [Style, minor improvements - use collapsible]
-            </details>
-
-            ### ✅ What Looks Good
-            [Brief positive notes - 2-3 bullet points max]
+            - **Dependabot PR**: Focus ONLY on security. Skip code quality.
+            - **synchronize event**: Focus on changes since last review.
 
             ---
-            *Review by Claude · [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+
+            ## PHASE 3: Categorize Issues (CRITICAL - Avoid Duplicates)
+
+            For EACH issue you find, categorize it:
+
+            ### Category A: SKIP (Already Acknowledged as Resolved)
+            An existing comment addresses this issue AND:
+            - A previous reply already marked it as resolved (contains "✅" or "Issue resolved")
+
+            → **Action: Do nothing** (already handled)
+
+            ### Category B: RESOLVED (Issue Fixed in This Commit)
+            An existing comment addresses this issue AND:
+            - The problematic code has been fixed or removed in the current diff
+            - No "resolved" reply exists yet
+
+            → **Action: Reply with "✅ Issue resolved" message**
+
+            ### Category C: REPLY (Still Unresolved)
+            An existing comment addresses this issue AND:
+            - Same file path
+            - Same or nearby line (within ±5 lines)
+            - Similar concern (e.g., both about SQL injection)
+            - The issue is STILL present in the code
+
+            → **Action: Reply to existing thread** with status update
+
+            ### Category D: NEW (Not Yet Reported)
+            No existing comment matches this issue.
+
+            → **Action: Add to new review**
+
+            ---
+
+            ## PHASE 4: Execute Actions
+
+            ### Step 4.1: Reply to RESOLVED issues (Category B)
+
+            For each issue that was FIXED in this commit, reply with a resolved message:
+
+            ```bash
+            # NOTE: Replace <EXISTING_COMMENT_ID> with the actual comment ID from Phase 1 results
+            gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
+              -X POST \
+              -f body="✅ **Issue resolved** in commit \`$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)\`
+
+            [Brief description of how it was fixed, e.g., 'Input is now properly sanitized using DOMPurify.']" \
+              -F in_reply_to=<EXISTING_COMMENT_ID>
             ```
 
-            ### Comment Management (IMPORTANT)
+            ### Step 4.2: Reply to UNRESOLVED issues (Category C)
 
-            1. First, check for an existing Claude review comment:
-               ```bash
-               gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
-                 --jq '.[] | select(.body | contains("<!-- CLAUDE-PR-REVIEW -->")) | {id: .id, body: .body}' | head -1
-               ```
+            For each issue that is STILL present:
 
-            2. If a previous review exists:
-               - UPDATE the existing comment instead of creating a new one
-               - Add a note: "Updated review for commit `<sha>`"
-               - Use: `gh api repos/${{ github.repository }}/issues/comments/COMMENT_ID -X PATCH -f body="..."`
+            ```bash
+            # NOTE: Replace <EXISTING_COMMENT_ID> with the actual comment ID from Phase 1 results
+            gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
+              -X POST \
+              -f body="**Update after commit \`$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)\`:**
 
-            3. If no previous review:
-               - Create a new comment with the marker: `<!-- CLAUDE-PR-REVIEW -->`
-               - Use: `gh pr comment ${{ github.event.pull_request.number }} --body "..."`
+            This issue is still present. [Your specific observation about the current state]
 
-            4. Always start your comment body with: `<!-- CLAUDE-PR-REVIEW -->`
+            [If partial fix: explain what was fixed and what remains]" \
+              -F in_reply_to=<EXISTING_COMMENT_ID>
+            ```
 
-            ### Review Actions
+            ### Step 4.3: Create new review with NEW findings only (Category D)
 
-            After posting/updating the comment:
+            If there are NEW issues not previously reported:
 
-            - If **Critical or High Priority issues found**: Submit a blocking review
-              ```bash
-              gh pr review ${{ github.event.pull_request.number }} --request-changes --body "Please address the critical/high priority issues noted in my review comment above."
-              ```
+            ```bash
+            gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+              -X POST \
+              -f event="REQUEST_CHANGES" \
+              -f body="<!-- CLAUDE-PR-REVIEW -->
+            ## 🔍 Claude PR Review
 
-            - If **Only suggestions** (no critical or high): Submit a comment review (non-blocking)
-              ```bash
-              gh pr review ${{ github.event.pull_request.number }} --comment --body "Review complete. See my detailed comment above. Minor suggestions noted but not blocking."
-              ```
+            **Reviewed:** \`$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)\`
+            **Overall:** 🚨 Changes Requested
 
-            - If **All looks good** (no issues):
-              ```bash
-              gh pr review ${{ github.event.pull_request.number }} --comment --body "✅ Code review complete. No issues found."
-              ```
+            **New issues found:** N issues
+            **Existing unresolved:** M issues (see thread replies above)
 
-            Note: Do NOT use --approve automatically. Let humans make the final approval decision.
+            ### ✅ What Looks Good
+            - [2-3 bullet points]
+
+            ---
+            *Review by Claude · [View workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*" \
+              -f 'comments[0][path]=<FILE_PATH>' \
+              -f 'comments[0][line]=<LINE_NUMBER>' \
+              -f 'comments[0][body]=🔴 **Critical - Security Issue**
+            # NOTE: Replace <FILE_PATH>, <LINE_NUMBER>, and body content with actual values from your findings
+            # For multiple issues, add comments[1], comments[2], etc.:
+            #   -f 'comments[1][path]=<FILE_PATH>' \
+            #   -f 'comments[1][line]=<LINE_NUMBER>' \
+            #   -f 'comments[1][body]=...'
+
+            [Detailed explanation]
+
+            **Suggestion:**
+            \`\`\`ts
+            // Fixed code here
+            \`\`\`'
+            ```
+
+            ### Step 4.4: If NO new issues but unresolved exist
+
+            Just post a summary (no `REQUEST_CHANGES` if only old issues):
+
+            ```bash
+            gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+              -X POST \
+              -f event="COMMENT" \
+              -f body="<!-- CLAUDE-PR-REVIEW -->
+            ## 🔍 Claude PR Review
+
+            **Reviewed:** \`$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)\`
+
+            No new issues found. **M previously reported issues** remain unresolved - see existing threads.
+
+            ---
+            *Review by Claude*"
+            ```
+
+            ### Step 4.5: If ALL issues resolved
+
+            ```bash
+            gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+              -X POST \
+              -f event="COMMENT" \
+              -f body="<!-- CLAUDE-PR-REVIEW -->
+            ## 🔍 Claude PR Review
+
+            **Reviewed:** \`$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)\`
+            **Overall:** ✅ Looks Good
+
+            All previously reported issues have been addressed. No new issues found.
+
+            ### ✅ What Looks Good
+            - [2-3 bullet points about the fixes]
+
+            ---
+            *Review by Claude*"
+            ```
+
+            ---
+
+            ## PHASE 5: Fallback
+
+            If the `gh api` call fails (e.g., invalid line number), fall back to a regular PR comment:
+
+            ```bash
+            gh pr comment ${{ github.event.pull_request.number }} --body "<!-- CLAUDE-PR-REVIEW -->
+            ## 🔍 Claude PR Review
+
+            **Reviewed:** \`$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)\`
+
+            ⚠️ Could not post inline comments. Issues found:
+
+            ### 🔴 Critical
+            - **file:line** - description
+
+            ---
+            *Review by Claude*"
+            ```
+
+            Then submit review action:
+            ```bash
+            gh pr review ${{ github.event.pull_request.number }} --request-changes \
+              --body "Please address the issues in my comment above."
+            ```
+
+            ---
+
+            ## Line Number Reference
+
+            When reading diff output like:
+            ```
+            @@ -10,6 +10,8 @@ context
+               existing line      <- line 10
+            +  new line           <- line 11 (use this number)
+            ```
+
+            The `+10,8` means this hunk starts at line 10 in the new file and spans 8 lines. Count ` ` (context) and `+` (added) lines from that starting point; skip `-` (removed) lines.
 
           claude_args: '--allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr review:*),Bash(gh api:*),Read,Glob,Grep"'
 

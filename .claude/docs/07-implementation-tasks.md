@@ -15,6 +15,7 @@ Before starting this phase, read:
 - `08-deployment-guide.md` - Docker configuration, environment variables
 
 ### 1.1 Project Setup
+
 - [x] Create Next.js 16 project with TypeScript
   ```bash
   npx create-next-app@latest exam-study-app --typescript --tailwind --eslint --app --src-dir
@@ -24,6 +25,7 @@ Before starting this phase, read:
 - [x] Create `.env.example` with required variables
 
 ### 1.2 Styling Setup
+
 **Read:** `05-frontend-design.md` (Design System section)
 - [x] Initialize shadcn/ui
   ```bash
@@ -34,6 +36,7 @@ Before starting this phase, read:
 - [x] Set up global CSS variables
 
 ### 1.3 Database Setup (Prisma Only)
+
 **Read:** `03-data-schema.md` (full document)
 - [x] Install Prisma
   ```bash
@@ -45,40 +48,53 @@ Before starting this phase, read:
 - [x] Generate Prisma client (`npx prisma generate`)
 
 ### 1.4 PostgreSQL Helm Setup
+
 **Read:** `08-deployment-guide.md` (Kubernetes Configuration section)
-- [ ] Enable Kubernetes in Docker Desktop
-- [ ] Create namespaces (`exam-study-dev`, `exam-study-prod`)
-- [ ] Update `scripts/setup-helm-essentials.sh` and `scripts/setup-helm.sh` :
-  - [ ] Add Bitnami Helm repo
-  - [ ] Generate random passwords with `openssl rand`
-  - [ ] Store credentials in Kubernetes secrets (`postgres-credentials`)
-  - [ ] Install PostgreSQL via Helm to both namespaces
-  - [ ] Display credentials summary
-- [ ] Update `scripts/teardown-helm-essentials.sh` and `scripts/teardown-helm.sh` for cleanup
-- [ ] Update `scripts/start.sh` with PostgreSQL port-forwards:
-  - [ ] Dev database on port 5432
-  - [ ] Prod database on port 5433
-- [ ] Update `scripts/stop.sh`
-- [ ] Run initial Prisma migration (`npx prisma migrate dev --name init`)
-- [ ] Verify with `npx prisma studio`
+- [x] Enable Kubernetes in Docker Desktop
+- [x] Create namespaces (`exam-study-dev`, `exam-study-prod`)
+- [x] Update `scripts/setup-helm-essentials.sh` and `scripts/setup-helm.sh`:
+  - [x] Add Bitnami Helm repo
+  - [x] Generate random passwords with `openssl rand`
+  - [x] Store credentials in Kubernetes secrets (`postgres-credentials`)
+  - [x] Install PostgreSQL via Helm to both namespaces
+  - [x] Display credentials summary
+- [x] Update `scripts/teardown-helm-essentials.sh` and `scripts/teardown-helm.sh` for cleanup
+- [x] Update `scripts/start.sh` with PostgreSQL port-forwards:
+  - [x] Dev database on port 5432
+  - [x] Prod database on port 5433
+- [x] Update `scripts/stop.sh`
+- [x] Run initial Prisma migration (`npx prisma migrate dev --name init`)
+- [x] Verify with `npx prisma studio`
+- [x] **[PR #10]** Remove unused PORT parameter from `setup_postgres()` function
+  - Files: `scripts/setup-helm-essentials.sh:77-78`, `scripts/setup-helm.sh:77-78`
+- [x] **[PR #10]** Add input validation to `setup_postgres()` function (validate namespace pattern)
+  - Files: `scripts/setup-helm-essentials.sh:76-78`, `scripts/setup-helm.sh:76-78`
+- [x] **[PR #10]** Address credential exposure: display retrieval instructions instead of plaintext passwords
+  - Files: `scripts/setup-helm-essentials.sh:363-377`, `scripts/setup-helm.sh:490-506`
 
 ### 1.5 App Kubernetes Setup
+
 **Read:** `08-deployment-guide.md` (Kubernetes Configuration section)
-- [ ] Create `Dockerfile` for Next.js app
-- [ ] Create `k8s/base/` directory structure
-- [ ] Create ConfigMap for app config (`k8s/base/app/configmap.yaml`)
-- [ ] Create App manifests:
-  - [ ] Deployment (`k8s/base/app/deployment.yaml`) - references `postgres-credentials` secret
-  - [ ] Service (`k8s/base/app/service.yaml`)
-- [ ] Create migration Job (`k8s/base/jobs/migration-job.yaml`)
-- [ ] Test: Build image and deploy to dev namespace
+- [x] Create `Dockerfile` for Next.js app
+- [x] Create `k8s/base/` directory structure
+- [x] Create ConfigMap for app config (`k8s/base/app/configmap.yaml`)
+- [x] Create App manifests:
+  - [x] Deployment (`k8s/base/app/deployment.yaml`) - references `postgres-credentials` secret
+  - [x] Service (`k8s/base/app/service.yaml`)
+- [x] Create migration Job (`k8s/base/jobs/migration-job.yaml`)
+- [x] Test: Build image and deploy to dev namespace
+- [x] Create `/api/health` endpoint for Kubernetes probes
+- [x] Configure Next.js standalone output
+- [x] Create `.dockerignore` for optimized builds
+- [x] Update Kustomize overlays for Helm PostgreSQL integration
 
 ### 1.6 Basic Layout
+
 **Read:** `05-frontend-design.md` (Page Layouts section)
-- [ ] Create root layout with providers
-- [ ] Create sidebar navigation component
-- [ ] Create header component with theme toggle
-- [ ] Set up next-themes for dark/light mode
+- [x] Create root layout with providers
+- [x] Create sidebar navigation component
+- [x] Create header component with theme toggle
+- [x] Set up next-themes for dark/light mode
 
 **Deliverables:**
 - Working Next.js app with Tailwind + shadcn/ui
@@ -100,6 +116,7 @@ Before starting this phase, read:
 - `09-question-format.md` - Markdown question format, parsing rules, validation
 
 ### 2.1 Exam Management
+
 **Read:** `06-api-specification.md` (Exams section)
 - [ ] Create exam list page (`/admin/exams`)
 - [ ] Create exam form component
@@ -110,6 +127,7 @@ Before starting this phase, read:
 - [ ] Create exam detail page (`/admin/exams/[id]`)
 
 ### 2.2 ZIP Upload
+
 **Read:** `04-user-flows.md` (Flow 5 - Import Questions)
 - [ ] Install react-dropzone
 - [ ] Create ImportDropzone component (see `05-frontend-design.md`)
@@ -117,6 +135,7 @@ Before starting this phase, read:
 - [ ] Implement file validation (ZIP only, size limit)
 
 ### 2.3 Question Parsing
+
 **Read:** `09-question-format.md` (full document), `03-data-schema.md` (Question JSONB Structure)
 - [ ] Install adm-zip for extraction
 - [ ] Create markdown parser (`lib/parsers/markdown.ts`)
@@ -131,6 +150,7 @@ Before starting this phase, read:
 - [ ] Write parser tests
 
 ### 2.4 Import API
+
 **Read:** `06-api-specification.md` (Import section)
 - [ ] Implement `POST /api/import` endpoint
   - [ ] Save uploaded file to temp
@@ -162,6 +182,7 @@ Before starting this phase, read:
 - `06-api-specification.md` - Questions endpoints, Progress endpoints
 
 ### 3.1 Question Display
+
 **Read:** `05-frontend-design.md` (Key Components section)
 - [ ] Create QuestionCard component
   - [ ] Question text with markdown support
@@ -177,6 +198,7 @@ Before starting this phase, read:
 - [ ] Handle question images
 
 ### 3.2 Quiz Mode
+
 **Read:** `04-user-flows.md` (Flow 3 - Quiz Mode)
 - [ ] Create exam dashboard (`/study/[examId]`)
   - [ ] Stats summary
@@ -188,6 +210,7 @@ Before starting this phase, read:
 - [ ] Create quiz settings (filters: section, unanswered, etc.)
 
 ### 3.3 Answer Submission
+
 **Read:** `06-api-specification.md` (Progress section)
 - [ ] Implement `POST /api/progress/answer`
 - [ ] Show immediate feedback (correct/wrong)
@@ -195,6 +218,7 @@ Before starting this phase, read:
 - [ ] Create Answer model records
 
 ### 3.4 Keyboard Shortcuts
+
 **Read:** `04-user-flows.md` (Keyboard Shortcuts table)
 - [ ] Create useKeyboard hook
 - [ ] 1-5 or A-E for option selection
@@ -204,6 +228,7 @@ Before starting this phase, read:
 - [ ] B for toggle bookmark
 
 ### 3.5 Bookmarks
+
 **Read:** `06-api-specification.md` (Bookmarks section)
 - [ ] Implement `POST /api/bookmarks/toggle`
 - [ ] Implement `GET /api/bookmarks`
@@ -227,6 +252,7 @@ Before starting this phase, read:
 - `03-data-schema.md` - SrsCard model
 
 ### 4.1 SM-2 Algorithm
+
 **Read:** `06-api-specification.md` (Grade Scale table in SRS section)
 - [ ] Create `lib/srs.ts` with SM-2 implementation
   ```typescript
@@ -236,6 +262,7 @@ Before starting this phase, read:
 - [ ] Handle edge cases (first review, failed review)
 
 ### 4.2 SRS API
+
 **Read:** `06-api-specification.md` (Spaced Repetition section)
 - [ ] Implement `GET /api/srs/due`
 - [ ] Implement `POST /api/srs/grade`
@@ -243,6 +270,7 @@ Before starting this phase, read:
 - [ ] Auto-create SrsCard when question first answered
 
 ### 4.3 Review Mode UI
+
 **Read:** `04-user-flows.md` (Flow 2 - Review Mode steps)
 - [ ] Create review page (`/study/[examId]/review`)
 - [ ] Show question without options first
@@ -253,6 +281,7 @@ Before starting this phase, read:
 - [ ] Show next review date after grading
 
 ### 4.4 Review Session
+
 - [ ] Track review session progress
 - [ ] Show session summary on completion
 - [ ] Display "no cards due" when empty
@@ -274,6 +303,7 @@ Before starting this phase, read:
 - `03-data-schema.md` - Common Queries section, StudyProgress model
 
 ### 5.1 Analytics API
+
 **Read:** `06-api-specification.md` (Analytics section)
 - [ ] Implement `GET /api/analytics/accuracy`
 - [ ] Implement `GET /api/analytics/sections`
@@ -282,6 +312,7 @@ Before starting this phase, read:
 - [ ] *(Review)* Add rate limiting on heavy analytics queries
 
 ### 5.2 Charts
+
 **Read:** `05-frontend-design.md` (Charts section)
 - [ ] Install Recharts
 - [ ] Create AccuracyTrendChart component
@@ -290,6 +321,7 @@ Before starting this phase, read:
 - [ ] Create WeakAreasList component
 
 ### 5.3 Analytics Page
+
 **Read:** `04-user-flows.md` (Flow 4 - Analytics Review wireframe)
 - [ ] Create analytics page (`/study/[examId]/analytics`)
 - [ ] Layout with responsive grid
@@ -297,6 +329,7 @@ Before starting this phase, read:
 - [ ] Error handling
 
 ### 5.4 Progress Export/Import
+
 **Read:** `06-api-specification.md` (Export/Import Progress section)
 **Read:** `03-data-schema.md` (StudyProgress JSONB Structure)
 - [ ] Implement `GET /api/export/progress`
@@ -322,6 +355,7 @@ Before starting this phase, read:
 - `08-deployment-guide.md` - Full document for production readiness
 
 ### 6.1 PWA Setup
+
 - [ ] Install next-pwa
 - [ ] Create `manifest.json`
 - [ ] Create app icons (multiple sizes)
@@ -329,6 +363,7 @@ Before starting this phase, read:
 - [ ] Test offline functionality
 
 ### 6.2 Theme System
+
 **Read:** `05-frontend-design.md` (Colors section)
 - [ ] Ensure dark/light theme works everywhere
 - [ ] Add system preference detection
@@ -336,6 +371,7 @@ Before starting this phase, read:
 - [ ] Smooth transitions
 
 ### 6.3 Mobile Responsive
+
 **Read:** `05-frontend-design.md` (Responsive Breakpoints, Mobile Adaptations)
 **Read:** `04-user-flows.md` (Mobile Considerations)
 - [ ] Test all pages on mobile viewport
@@ -344,6 +380,7 @@ Before starting this phase, read:
 - [ ] Full-screen quiz mode on mobile
 
 ### 6.4 Error Handling
+
 **Read:** `05-frontend-design.md` (Error States section)
 **Read:** `06-api-specification.md` (Error Responses section)
 - [ ] Global error boundary
@@ -353,6 +390,7 @@ Before starting this phase, read:
 - [ ] Loading states everywhere
 
 ### 6.5 Performance
+
 - [ ] Optimize bundle size
 - [ ] Add React Suspense boundaries
 - [ ] Optimize images with next/image
@@ -360,6 +398,7 @@ Before starting this phase, read:
 - [ ] Add database indexes (see `03-data-schema.md` - Database Indexes table)
 
 ### 6.6 Testing
+
 - [ ] Unit tests for parsers
 - [ ] Unit tests for SM-2 algorithm
 - [ ] Integration tests for API routes
@@ -367,6 +406,16 @@ Before starting this phase, read:
 - [ ] *(Review)* Integration tests for Prisma client operations
 - [ ] *(Review)* Test cascade delete behavior (Exam → Questions → Answers)
 - [ ] *(Review)* Validate JSONB data structure tests
+
+### 6.7 Dependency Management
+
+**Source:** PR #11 review
+- [ ] **[PR #11]** Document dependency update policy/schedule
+  - File: `.claude/docs/08-deployment-guide.md` or new `SECURITY.md`
+  - Note: OpenSSF Scorecard flagged pg package dependencies; establish review cadence
+- [ ] **[PR #11]** Monitor pg package for security updates
+  - Note: pg package has transitive dependencies that may need updates
+  - Suggestion: Subscribe to pg package releases or use Dependabot alerts
 
 **Deliverables:**
 - PWA working with offline support
@@ -386,6 +435,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - Basic kubectl familiarity from Phase 1
 
 ### 7.1 Health Checks & Probes
+
 **CKAD Topics:** Application Observability and Maintenance
 - [ ] Add liveness probe to app deployment (HTTP GET /api/health)
 - [ ] Add readiness probe to app deployment
@@ -394,6 +444,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [ ] Test: Kill process, verify restart
 
 ### 7.2 Resource Management
+
 **CKAD Topics:** Application Environment, Configuration
 - [ ] Add resource requests to all containers
 - [ ] Add resource limits to all containers
@@ -402,6 +453,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [ ] Test: Exceed quota, verify rejection
 
 ### 7.3 Configuration Management
+
 **CKAD Topics:** Application Environment, Configuration
 - [ ] Mount ConfigMap as environment variables
 - [ ] Mount ConfigMap as volume (config file)
@@ -409,6 +461,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [ ] Practice: Update ConfigMap, rollout restart
 
 ### 7.4 Scaling & Updates
+
 **CKAD Topics:** Application Deployment
 - [ ] Configure HorizontalPodAutoscaler (`k8s/base/app/hpa.yaml`)
 - [ ] Practice: Manual scaling with `kubectl scale`
@@ -417,6 +470,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [ ] Practice: Rollback with `kubectl rollout undo`
 
 ### 7.5 Ingress Configuration
+
 **CKAD Topics:** Services & Networking
 - [ ] Enable NGINX Ingress controller
 - [ ] Create Ingress resource (`k8s/base/app/ingress.yaml`)
@@ -425,6 +479,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [ ] Test: Access app via hostname
 
 ### 7.6 Jobs and CronJobs
+
 **CKAD Topics:** Workloads
 - [ ] Create database backup Job (`k8s/base/jobs/backup-job.yaml`)
 - [ ] Create backup CronJob (daily) (`k8s/base/jobs/backup-cronjob.yaml`)
@@ -433,6 +488,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [ ] Test: Manual job run, verify completion
 
 ### 7.7 Network Policies (CKS)
+
 **CKS Topics:** Cluster Hardening, System Hardening
 - [ ] Create default deny-all ingress policy (`k8s/security/network-policies/default-deny.yaml`)
 - [ ] Create policy: app → postgres allowed (`k8s/security/network-policies/allow-app-to-db.yaml`)
@@ -441,6 +497,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [ ] Test: Verify network isolation
 
 ### 7.8 Pod Security (CKS)
+
 **CKS Topics:** System Hardening, Minimize Microservice Vulnerabilities
 - [ ] Add SecurityContext to app deployment:
   - [ ] runAsNonRoot: true
@@ -453,6 +510,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [ ] Test: Verify pods run as non-root
 
 ### 7.9 RBAC (CKS)
+
 **CKS Topics:** Cluster Hardening
 - [ ] Create ServiceAccount for app (`k8s/security/rbac/serviceaccount.yaml`)
 - [ ] Create Role with minimal permissions (`k8s/security/rbac/role.yaml`)
@@ -462,13 +520,18 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [ ] Test: Verify RBAC restrictions
 
 ### 7.10 Secrets Security (CKS)
+
 **CKS Topics:** Minimize Microservice Vulnerabilities
 - [ ] Audit current secrets usage
 - [ ] Practice: Encode/decode secrets
 - [ ] Configure secret as volume mount (not env var)
 - [ ] Document secrets rotation procedure
+- [ ] **[PR #10]** Document PostgreSQL password rotation process in deployment guide
+  - File: `.claude/docs/08-deployment-guide.md`
+  - Note: Secrets are preserved on re-run for stability; document when/how to rotate
 
 ### 7.11 Observability & Troubleshooting
+
 **CKAD Topics:** Application Observability and Maintenance
 **CKS Topics:** Monitoring, Logging and Runtime Security
 - [ ] Practice: `kubectl logs -f deployment/exam-study-app`
@@ -480,6 +543,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [ ] Practice: Debug pending pods (resource constraints)
 
 ### 7.12 Kustomize
+
 **CKAD Topics:** Application Deployment
 - [x] Create base kustomization.yaml (`k8s/base/kustomization.yaml`)
 - [x] Create dev overlay (`k8s/overlays/dev/`)
@@ -496,6 +560,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [x] Configure environment-specific patches
 
 ### 7.13 ArgoCD GitOps
+
 **CKAD Topics:** Application Deployment, GitOps patterns
 **CKS Topics:** Supply Chain Security
 - [x] Create ArgoCD project (`k8s/argocd/project.yaml`)
@@ -516,6 +581,7 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [ ] Practice: Rollback using ArgoCD
 
 ### 7.14 GitHub Actions CI/CD
+
 **Topics:** Continuous Integration, Container Security
 - [x] Create CI workflow (`.github/workflows/ci.yml`)
   - [x] Lint, typecheck, build, test
@@ -537,10 +603,17 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [x] Create CodeQL security analysis (`.github/workflows/codeql.yml`)
 - [x] Create dependency review (`.github/workflows/dependency-review.yml`)
 - [x] Configure Dependabot (`.github/dependabot.yml`)
+- [ ] **[PR #11]** Add npm audit step to CI workflow for ongoing security monitoring
+  - File: `.github/workflows/ci.yml`
+  - Note: Trivy found CVE-2025-64756 in glob package; proactive auditing catches these earlier
+- [ ] **[PR #11]** Configure CodeRabbit for non-default branch reviews
+  - File: `.coderabbit.yaml`
+  - Note: CodeRabbit skipped PR #11 review; enable for `dev` branch
 - [ ] Practice: Create PR and observe checks
 - [ ] Practice: Create release and observe image build
 
 ### 7.15 Practice Exercises
+
 Create hands-on exercises for exam prep:
 - [ ] `k8s/exercises/01-create-deployment.md` - Create deployment from scratch
 - [ ] `k8s/exercises/02-expose-service.md` - Expose as ClusterIP, NodePort, LoadBalancer
@@ -583,15 +656,15 @@ Create hands-on exercises for exam prep:
 
 | Phase | Tasks | Priority | Key Docs to Read |
 |-------|-------|----------|------------------|
-| 1. Foundation | 27 | Critical | 02, 03, 05, 08 |
+| 1. Foundation | 30 | Critical | 02, 03, 05, 08 |
 | 2. Admin & Import | 20 | Critical | 03, 04, 06 |
 | 3. Study Features | 22 | Critical | 04, 05, 06 |
 | 4. Spaced Repetition | 15 | High | 03, 04, 06 |
 | 5. Analytics | 14 | Medium | 03, 04, 05, 06 |
-| 6. Polish & PWA | 20 | Medium | 01, 05, 08 |
-| 7. Advanced K8s (CKAD/CKS) | 85 | Optional | 08, ArgoCD docs |
+| 6. Polish & PWA | 22 | Medium | 01, 05, 08 |
+| 7. Advanced K8s (CKAD/CKS) | 89 | Optional | 08, ArgoCD docs |
 
-**Total: ~203 tasks** (118 core + 85 Kubernetes/GitOps learning)
+**Total: ~212 tasks** (123 core + 89 Kubernetes/GitOps learning)
 
 ### Phase 7 Breakdown
 
@@ -600,7 +673,7 @@ Create hands-on exercises for exam prep:
 | 7.1-7.11 Basic K8s | 45 | Pending |
 | 7.12 Kustomize | 8 | ✅ Complete |
 | 7.13 ArgoCD GitOps | 12 | Mostly Complete |
-| 7.14 GitHub Actions | 12 | ✅ Complete |
+| 7.14 GitHub Actions | 14 | Mostly Complete |
 | 7.15 Practice Exercises | 10 | Pending |
 
 ---

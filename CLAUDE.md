@@ -55,7 +55,7 @@ main branch   → builds :latest image → manual deploy to localhost:30000
 - **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui, Recharts 3, Zustand 5
 - **Backend**: Next.js API Routes, Prisma ORM 7
 - **Database**: PostgreSQL 18 with JSONB for flexible question storage
-- **Infrastructure**: Kubernetes (Docker Desktop), Helm, ArgoCD, Node.js 22 LTS
+- **Infrastructure**: Kubernetes (Docker Desktop), Helm, ArgoCD, Node.js 24 LTS
 
 ### Key Design Decisions
 - Questions stored as JSONB in PostgreSQL for flexible schema

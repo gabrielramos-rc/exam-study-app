@@ -323,7 +323,7 @@ spec:
 
 ```dockerfile
 # Build stage
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -341,11 +341,13 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production stage
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
+# Required for Next.js standalone to bind to all interfaces (not just 127.0.0.1)
+ENV HOSTNAME=0.0.0.0
 
 # Copy built app
 COPY --from=builder /app/.next/standalone ./
@@ -356,11 +358,15 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Create directories for volumes
-RUN mkdir -p /app/uploads /app/public/images
+# Remove npm from production image (not needed, reduces attack surface - CKS best practice)
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Run as non-root user (CKS best practice)
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+
+# Create directories for volumes with proper ownership
+RUN mkdir -p /app/uploads /app/public/images && chown -R nextjs:nodejs /app/uploads /app/public/images
+
 USER nextjs
 
 EXPOSE 3000
@@ -496,6 +502,29 @@ kubectl set image deployment/exam-study-app app=exam-study-app:v2 -n exam-study
 ---
 
 ## Database Management
+
+### PostgreSQL (via Helm)
+
+PostgreSQL is installed via the Bitnami Helm chart in each namespace:
+
+```bash
+# Check PostgreSQL status
+kubectl get pods -n exam-study-dev -l app.kubernetes.io/name=postgresql
+kubectl get pods -n exam-study-prod -l app.kubernetes.io/name=postgresql
+
+# View credentials
+kubectl get secret postgres-credentials -n exam-study-dev -o jsonpath='{.data.postgres-password}' | base64 -d
+
+# Database shell (dev)
+kubectl exec -it postgres-postgresql-0 -n exam-study-dev -- psql -U study -d study
+
+# Database shell (prod)
+kubectl exec -it postgres-postgresql-0 -n exam-study-prod -- psql -U study -d study
+
+# Port-forward (dev on 5432, prod on 5433)
+kubectl port-forward svc/postgres-postgresql -n exam-study-dev 5432:5432 &
+kubectl port-forward svc/postgres-postgresql -n exam-study-prod 5433:5432 &
+```
 
 ### Run Migrations
 
