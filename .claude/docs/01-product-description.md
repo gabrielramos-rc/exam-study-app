@@ -76,7 +76,16 @@ A unified study platform that:
 
 ## Technical Constraints
 
-- Must run in Docker containers
+- Must run in Kubernetes (Docker Desktop)
 - Single-user deployment
 - File-based question import (no API integrations)
 - PostgreSQL for persistent storage
+- Serves as CKAD/CKS learning platform
+
+## Infrastructure Features
+
+- **Multi-environment**: Dev (auto-deploy) and Prod (manual approval)
+- **GitOps**: ArgoCD for declarative, Git-based deployments
+- **CI/CD**: GitHub Actions for build, test, security scanning
+- **Container Registry**: GitHub Container Registry (GHCR)
+- **Configuration Management**: Kustomize overlays for environment differences

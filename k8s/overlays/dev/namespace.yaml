@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: exam-study-dev
+  labels:
+    app.kubernetes.io/name: exam-study-app
+    environment: dev

@@ -2,50 +2,57 @@
 
 Compact reference for implementation. See full docs only for edge cases.
 
+**Related Docs:**
+- `09-question-format.md` - Markdown format for importing questions
+- `10-infrastructure-access.md` - Full access guide for ArgoCD, Kubernetes, PostgreSQL
+
 ---
 
 ## Project Structure
 
 ```
-src/
-├── app/
-│   ├── page.tsx                    # Home/dashboard
-│   ├── layout.tsx                  # Root layout
-│   ├── globals.css                 # Global styles
-│   ├── study/[examId]/
-│   │   ├── page.tsx                # Exam dashboard
-│   │   ├── quiz/page.tsx           # Quiz mode
-│   │   ├── review/page.tsx         # SRS review mode
-│   │   └── analytics/page.tsx      # Analytics
-│   ├── admin/
-│   │   ├── page.tsx                # Admin home
-│   │   ├── exams/page.tsx          # Exam list
-│   │   ├── exams/new/page.tsx      # Create exam
-│   │   ├── exams/[id]/page.tsx     # Exam detail
-│   │   ├── exams/[id]/import/page.tsx  # Import questions
-│   │   └── progress/page.tsx       # Export/import progress
-│   └── api/                        # See API section below
-├── components/
-│   ├── ui/                         # shadcn/ui
-│   ├── layout/                     # Sidebar, Header
-│   ├── question/                   # QuestionCard, OptionButton, ExplanationPanel
-│   └── analytics/                  # Charts
-├── lib/
-│   ├── prisma.ts                   # Prisma singleton
-│   ├── srs.ts                      # SM-2 algorithm
-│   ├── utils.ts                    # cn() helper
-│   └── parsers/
-│       ├── markdown.ts             # MD question parser
-│       └── json.ts                 # JSON validator
-├── hooks/
-│   ├── useQuestions.ts
-│   ├── useProgress.ts
-│   └── useKeyboard.ts
-├── stores/
-│   ├── quizStore.ts                # Zustand
-│   └── settingsStore.ts
-└── types/
-    └── index.ts
+exam-study-app/
+├── .github/workflows/              # CI/CD pipelines
+├── k8s/
+│   ├── base/                       # Kustomize base
+│   ├── overlays/dev/               # Dev environment
+│   ├── overlays/prod/              # Prod environment
+│   └── argocd/                     # ArgoCD apps
+├── scripts/                        # Setup scripts
+├── src/
+│   ├── app/
+│   │   ├── page.tsx                # Home/dashboard
+│   │   ├── layout.tsx              # Root layout
+│   │   ├── globals.css             # Global styles
+│   │   ├── study/[examId]/
+│   │   │   ├── page.tsx            # Exam dashboard
+│   │   │   ├── quiz/page.tsx       # Quiz mode
+│   │   │   ├── review/page.tsx     # SRS review mode
+│   │   │   └── analytics/page.tsx  # Analytics
+│   │   ├── admin/
+│   │   │   ├── page.tsx            # Admin home
+│   │   │   ├── exams/page.tsx      # Exam list
+│   │   │   ├── exams/new/page.tsx  # Create exam
+│   │   │   ├── exams/[id]/page.tsx # Exam detail
+│   │   │   ├── exams/[id]/import/  # Import questions
+│   │   │   └── progress/page.tsx   # Export/import progress
+│   │   └── api/                    # See API section below
+│   ├── components/
+│   │   ├── ui/                     # shadcn/ui
+│   │   ├── layout/                 # Sidebar, Header
+│   │   ├── question/               # QuestionCard, OptionButton, ExplanationPanel
+│   │   └── analytics/              # Charts
+│   ├── lib/
+│   │   ├── prisma.ts               # Prisma singleton
+│   │   ├── srs.ts                  # SM-2 algorithm
+│   │   ├── utils.ts                # cn() helper
+│   │   └── parsers/
+│   │       ├── markdown.ts         # MD question parser
+│   │       └── json.ts             # JSON validator
+│   ├── hooks/
+│   ├── stores/
+│   └── types/
+└── Dockerfile
 ```
 
 ---
@@ -283,28 +290,92 @@ function calculateSM2(
 
 ---
 
-## Docker
+## Kubernetes
+
+```bash
+# Quick start (single environment)
+docker build -t exam-study-app:latest .
+kubectl apply -f k8s/base/
+kubectl get pods -n exam-study -w
+open http://localhost:30000
+
+# Common commands
+kubectl get all -n exam-study              # View resources
+kubectl logs -f deploy/exam-study-app -n exam-study  # App logs
+kubectl exec -it deploy/postgres -n exam-study -- psql -U study -d study  # DB shell
+kubectl rollout restart deploy/exam-study-app -n exam-study  # Restart app
+kubectl delete namespace exam-study        # Reset everything
+```
 
 ```yaml
-# docker-compose.yml
-services:
-  app:
-    build: .
-    ports: ["3000:3000"]
-    environment:
-      - DATABASE_URL=postgresql://study:study@db:5432/study
-    depends_on:
-      db: { condition: service_healthy }
-  db:
-    image: postgres:18-alpine
-    environment:
-      - POSTGRES_USER=study
-      - POSTGRES_PASSWORD=study
-      - POSTGRES_DB=study
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U study"]
+# Key manifests in k8s/base/
+- namespace.yaml     # exam-study namespace
+- configmap.yaml     # App configuration
+- secret.yaml        # Database credentials
+- postgres/          # PostgreSQL Deployment + Service + PVC
+- app/               # App Deployment + Service
+- jobs/              # Migration Job
+```
+
+---
+
+## Multi-Environment (Kustomize + ArgoCD)
+
+### Environments
+| Environment | Branch | Port | Sync |
+|-------------|--------|------|------|
+| Dev | `dev` | 30001 | Auto |
+| Prod | `main` | 30000 | Manual |
+
+### Kustomize
+```bash
+# Preview environment
+kubectl kustomize k8s/overlays/dev
+kubectl kustomize k8s/overlays/prod
+
+# Apply directly (without ArgoCD)
+kubectl apply -k k8s/overlays/dev
+kubectl apply -k k8s/overlays/prod
+```
+
+### Helm (ArgoCD + Dashboard)
+```bash
+# Setup (installs ArgoCD, Image Updater, K8s Dashboard)
+./scripts/setup-helm.sh
+
+# Access UIs
+kubectl port-forward svc/argocd-server -n argocd 8080:443 &
+kubectl -n kubernetes-dashboard port-forward svc/kubernetes-dashboard-kong-proxy 8443:443 &
+open https://localhost:8080     # ArgoCD
+open https://localhost:8443     # K8s Dashboard
+
+# Helm management
+helm list -A                    # List releases
+helm upgrade argocd argo/argo-cd -n argocd  # Upgrade
+
+# Check status
+kubectl get applications -n argocd
+
+# Force sync
+kubectl patch application exam-study-app-dev -n argocd \
+  --type merge -p '{"operation":{"sync":{}}}'
+
+# Teardown
+./scripts/teardown-helm.sh
+```
+
+### Git Workflow
+```bash
+# Dev: auto-deploys on push
+git checkout dev
+git push origin dev  # → builds :dev → ArgoCD auto-syncs
+
+# Prod: manual approval required
+git checkout main
+git merge dev
+git push origin main
+gh release create v1.0.0  # → builds :latest
+# Then manually sync in ArgoCD
 ```
 
 ---
@@ -329,6 +400,8 @@ Button, Card, Badge, Progress, Dialog, DropdownMenu, Tabs, Input, Textarea, Sele
 
 ```
 Phase 1 (Foundation) → Phase 2 (Admin/Import) → Phase 3 (Study) → Phase 4 (SRS)
-                                                      ↓
+                                                      ↓                  ↓
                                                 Phase 5 (Analytics) → Phase 6 (Polish/PWA)
+                                                                         ↓
+                                                                   Phase 7 (K8s/CKAD/CKS)
 ```

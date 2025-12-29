@@ -1,0 +1,86 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: exam-study-app-prod
+
+# Reference the base configuration
+resources:
+  - ../../base
+  - namespace.yaml
+  - service-nodeport.yaml
+
+# Override namespace for all resources
+namespace: exam-study-prod
+
+# Add prod-specific labels
+commonLabels:
+  environment: prod
+
+# Patches for prod-specific changes
+patches:
+  # Use stable image tag
+  - target:
+      kind: Deployment
+      name: exam-study-app
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: ghcr.io/gabrielramos-rc/exam-study-app:latest
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+
+  # Higher resources for prod
+  - target:
+      kind: Deployment
+      name: exam-study-app
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "256Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "250m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "512Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "500m"
+
+  # Higher resources for postgres in prod
+  - target:
+      kind: Deployment
+      name: postgres
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "512Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "1Gi"
+
+  # Larger PVC for prod
+  - target:
+      kind: PersistentVolumeClaim
+      name: postgres-pvc
+    patch: |
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 10Gi
+
+# ConfigMap overrides for prod
+configMapGenerator:
+  - name: exam-study-config
+    behavior: merge
+    literals:
+      - NODE_ENV=production
+
+# Image tag override
+images:
+  - name: ghcr.io/gabrielramos-rc/exam-study-app
+    newTag: latest

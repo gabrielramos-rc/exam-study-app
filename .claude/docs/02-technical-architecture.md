@@ -4,10 +4,12 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                       Docker Compose                             │
+│                    Kubernetes (Docker Desktop)                   │
+│                      Namespace: exam-study                       │
 ├────────────────────────────────┬────────────────────────────────┤
 │         Next.js 16             │          PostgreSQL 18          │
 │       (Full-stack App)         │           (Database)            │
+│      Deployment + Service      │      Deployment + Service       │
 ├────────────────────────────────┼────────────────────────────────┤
 │ • React Server Components      │ • Exams table                   │
 │ • API Routes (App Router)      │ • Questions table (JSONB)       │
@@ -16,9 +18,9 @@
 │ • Static file serving          │ • Bookmarks table               │
 └────────────────────────────────┴────────────────────────────────┘
               ↑                              ↑
-         Port 3000                      Port 5432
+      NodePort 30000                   ClusterIP 5432
               │                              │
-              └──────────── Docker Network ──┘
+              └───────── K8s Cluster Network ─┘
 ```
 
 ## Technology Stack
@@ -46,16 +48,45 @@
 ### Infrastructure
 | Technology | Purpose | Version |
 |------------|---------|---------|
-| Docker | Containerization | 29.x |
-| Docker Compose | Multi-container orchestration | 2.x |
+| Docker Desktop | Container runtime + Kubernetes | latest |
+| Kubernetes | Container orchestration | 1.29+ |
+| kubectl | Kubernetes CLI | 1.29+ |
+| Kustomize | K8s configuration management | built-in |
+| ArgoCD | GitOps continuous delivery | stable |
 | PostgreSQL | Relational database | 18 |
 | Node.js | JavaScript runtime | 22 LTS |
+
+### CI/CD
+| Technology | Purpose |
+|------------|---------|
+| GitHub Actions | CI/CD workflows |
+| GHCR | Container image registry |
+| Trivy | Container security scanning |
+| Dependabot | Dependency updates |
 
 ## Project Structure
 
 ```
 exam-study-app/
-├── docker-compose.yml          # Container orchestration
+├── .github/
+│   ├── workflows/              # GitHub Actions CI/CD
+│   │   ├── ci.yml              # Build, lint, test
+│   │   ├── docker-dev.yml      # Dev image on dev branch
+│   │   ├── docker-publish.yml  # Prod image on release
+│   │   └── ...                 # Security, PR checks
+│   └── dependabot.yml          # Dependency updates
+├── k8s/                        # Kubernetes manifests
+│   ├── base/                   # Kustomize base (shared)
+│   ├── overlays/
+│   │   ├── dev/                # Dev environment overlay
+│   │   └── prod/               # Prod environment overlay
+│   ├── argocd/                 # ArgoCD applications
+│   └── security/               # CKS hardening
+├── scripts/
+│   ├── setup-helm.sh           # Install all Helm charts
+│   ├── teardown-helm.sh        # Uninstall all Helm charts
+│   ├── start.sh                # Start port-forwards
+│   └── stop.sh                 # Stop port-forwards
 ├── Dockerfile                  # App container build
 ├── .env.example                # Environment template
 ├── package.json                # Dependencies
@@ -231,6 +262,47 @@ User grades (0-5)
 │ nextReview = NOW + N  │
 └───────────────────────┘
 ```
+
+## GitOps Deployment Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                          GitHub Repository                           │
+├─────────────────┬───────────────────────────────────────────────────┤
+│   dev branch    │                   main branch                      │
+│       │         │                       │                            │
+│       ▼         │                       ▼                            │
+│  GitHub Actions │                  GitHub Actions                    │
+│  Build :dev tag │                  Build :latest tag                 │
+│       │         │                       │                            │
+│       ▼         │                       ▼                            │
+│     GHCR        │                     GHCR                           │
+│  :dev image     │                  :latest image                     │
+└────────┬────────┴───────────────────────┬───────────────────────────┘
+         │                                │
+         ▼                                ▼
+┌─────────────────┐              ┌─────────────────┐
+│     ArgoCD      │              │     ArgoCD      │
+│  Dev Application│              │ Prod Application│
+│   (auto-sync)   │              │  (manual sync)  │
+└────────┬────────┘              └────────┬────────┘
+         │                                │
+         ▼                                ▼
+┌─────────────────┐              ┌─────────────────┐
+│ exam-study-dev  │              │ exam-study-prod │
+│   namespace     │              │   namespace     │
+│   :30001        │              │    :30000       │
+└─────────────────┘              └─────────────────┘
+```
+
+### Environment Configuration
+
+| Environment | Branch | Image Tag | Sync Mode | Port |
+|-------------|--------|-----------|-----------|------|
+| Dev | `dev` | `:dev` | Auto | 30001 |
+| Prod | `main` | `:latest` | Manual | 30000 |
+
+---
 
 ## Key Design Decisions
 

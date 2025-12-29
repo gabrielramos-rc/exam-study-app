@@ -44,12 +44,23 @@ Before starting this phase, read:
 - [ ] Set up Prisma client singleton (`lib/prisma.ts`)
 - [ ] Create initial migration
 
-### 1.4 Docker Setup
-**Read:** `08-deployment-guide.md` (Docker Configuration section)
+### 1.4 Kubernetes Setup
+**Read:** `08-deployment-guide.md` (Kubernetes Configuration section)
+- [ ] Enable Kubernetes in Docker Desktop
 - [ ] Create `Dockerfile` for Next.js app
-- [ ] Create `docker-compose.yml` with app + PostgreSQL
-- [ ] Create `docker-entrypoint.sh` for migrations
-- [ ] Test local Docker build
+- [ ] Create `k8s/base/` directory structure
+- [ ] Create Namespace manifest (`k8s/base/namespace.yaml`)
+- [ ] Create ConfigMap for app config (`k8s/base/configmap.yaml`)
+- [ ] Create Secret for database credentials (`k8s/base/secret.yaml`)
+- [ ] Create PostgreSQL manifests:
+  - [ ] PersistentVolumeClaim (`k8s/base/postgres/pvc.yaml`)
+  - [ ] Deployment (`k8s/base/postgres/deployment.yaml`)
+  - [ ] Service (`k8s/base/postgres/service.yaml`)
+- [ ] Create App manifests:
+  - [ ] Deployment (`k8s/base/app/deployment.yaml`)
+  - [ ] Service (`k8s/base/app/service.yaml`)
+- [ ] Create migration Job (`k8s/base/jobs/migration-job.yaml`)
+- [ ] Test: `kubectl apply -f k8s/base/` and verify app runs
 
 ### 1.5 Basic Layout
 **Read:** `05-frontend-design.md` (Page Layouts section)
@@ -60,9 +71,10 @@ Before starting this phase, read:
 
 **Deliverables:**
 - Working Next.js app with Tailwind + shadcn/ui
-- PostgreSQL running in Docker
+- PostgreSQL running in Kubernetes (Docker Desktop)
 - Basic layout with navigation
-- Database migrations working
+- Database migrations working via Kubernetes Job
+- kubectl commands for local development
 
 ---
 
@@ -73,6 +85,7 @@ Before starting this phase, read:
 - `04-user-flows.md` - Flow 1 (First-Time Setup), Flow 5 (Import Questions)
 - `06-api-specification.md` - Exams endpoints, Import endpoints
 - `03-data-schema.md` - Exam model, Question model, JSONB structure
+- `09-question-format.md` - Markdown question format, parsing rules, validation
 
 ### 2.1 Exam Management
 **Read:** `06-api-specification.md` (Exams section)
@@ -92,7 +105,7 @@ Before starting this phase, read:
 - [ ] Implement file validation (ZIP only, size limit)
 
 ### 2.3 Question Parsing
-**Read:** `03-data-schema.md` (Question JSONB Structure section)
+**Read:** `09-question-format.md` (full document), `03-data-schema.md` (Question JSONB Structure)
 - [ ] Install adm-zip for extraction
 - [ ] Create markdown parser (`lib/parsers/markdown.ts`)
   - [ ] Parse question text
@@ -345,6 +358,192 @@ Before starting this phase, read:
 
 ---
 
+## Phase 7: Advanced Kubernetes (CKAD/CKS Learning)
+
+### Overview
+This phase expands Kubernetes knowledge using the exam study app for hands-on practice, covering advanced topics from CKAD (Certified Kubernetes Application Developer) and CKS (Certified Kubernetes Security Specialist) certifications.
+
+### Prerequisites
+- Phases 1-4 completed (working app in Kubernetes)
+- Basic kubectl familiarity from Phase 1
+
+### 7.1 Health Checks & Probes
+**CKAD Topics:** Application Observability and Maintenance
+- [ ] Add liveness probe to app deployment (HTTP GET /api/health)
+- [ ] Add readiness probe to app deployment
+- [ ] Add startup probe for slow-starting containers
+- [ ] Add probes to PostgreSQL deployment
+- [ ] Test: Kill process, verify restart
+
+### 7.2 Resource Management
+**CKAD Topics:** Application Environment, Configuration
+- [ ] Add resource requests to all containers
+- [ ] Add resource limits to all containers
+- [ ] Create LimitRange for namespace (`k8s/base/limit-range.yaml`)
+- [ ] Create ResourceQuota for namespace (`k8s/base/resource-quota.yaml`)
+- [ ] Test: Exceed quota, verify rejection
+
+### 7.3 Configuration Management
+**CKAD Topics:** Application Environment, Configuration
+- [ ] Mount ConfigMap as environment variables
+- [ ] Mount ConfigMap as volume (config file)
+- [ ] Mount Secret as environment variables
+- [ ] Practice: Update ConfigMap, rollout restart
+
+### 7.4 Scaling & Updates
+**CKAD Topics:** Application Deployment
+- [ ] Configure HorizontalPodAutoscaler (`k8s/base/app/hpa.yaml`)
+- [ ] Practice: Manual scaling with `kubectl scale`
+- [ ] Configure RollingUpdate strategy
+- [ ] Practice: Rolling update with new image
+- [ ] Practice: Rollback with `kubectl rollout undo`
+
+### 7.5 Ingress Configuration
+**CKAD Topics:** Services & Networking
+- [ ] Enable NGINX Ingress controller
+- [ ] Create Ingress resource (`k8s/base/app/ingress.yaml`)
+- [ ] Configure path-based routing
+- [ ] Configure TLS termination (self-signed cert)
+- [ ] Test: Access app via hostname
+
+### 7.6 Jobs and CronJobs
+**CKAD Topics:** Workloads
+- [ ] Create database backup Job (`k8s/base/jobs/backup-job.yaml`)
+- [ ] Create backup CronJob (daily) (`k8s/base/jobs/backup-cronjob.yaml`)
+- [ ] Configure job completion and parallelism
+- [ ] Configure activeDeadlineSeconds
+- [ ] Test: Manual job run, verify completion
+
+### 7.7 Network Policies (CKS)
+**CKS Topics:** Cluster Hardening, System Hardening
+- [ ] Create default deny-all ingress policy (`k8s/security/network-policies/default-deny.yaml`)
+- [ ] Create policy: app → postgres allowed (`k8s/security/network-policies/allow-app-to-db.yaml`)
+- [ ] Create policy: ingress → app allowed (`k8s/security/network-policies/allow-ingress-to-app.yaml`)
+- [ ] Create egress policy: restrict external access (`k8s/security/network-policies/restrict-egress.yaml`)
+- [ ] Test: Verify network isolation
+
+### 7.8 Pod Security (CKS)
+**CKS Topics:** System Hardening, Minimize Microservice Vulnerabilities
+- [ ] Add SecurityContext to app deployment:
+  - [ ] runAsNonRoot: true
+  - [ ] readOnlyRootFilesystem: true
+  - [ ] allowPrivilegeEscalation: false
+  - [ ] capabilities: drop ALL
+- [ ] Add SecurityContext to postgres deployment
+- [ ] Enable Pod Security Admission for namespace (restricted)
+- [ ] Create security-hardened manifests (`k8s/security/pod-security.yaml`)
+- [ ] Test: Verify pods run as non-root
+
+### 7.9 RBAC (CKS)
+**CKS Topics:** Cluster Hardening
+- [ ] Create ServiceAccount for app (`k8s/security/rbac/serviceaccount.yaml`)
+- [ ] Create Role with minimal permissions (`k8s/security/rbac/role.yaml`)
+- [ ] Create RoleBinding (`k8s/security/rbac/rolebinding.yaml`)
+- [ ] Update deployments to use ServiceAccount
+- [ ] Create read-only ClusterRole for monitoring
+- [ ] Test: Verify RBAC restrictions
+
+### 7.10 Secrets Security (CKS)
+**CKS Topics:** Minimize Microservice Vulnerabilities
+- [ ] Audit current secrets usage
+- [ ] Practice: Encode/decode secrets
+- [ ] Configure secret as volume mount (not env var)
+- [ ] Document secrets rotation procedure
+
+### 7.11 Observability & Troubleshooting
+**CKAD Topics:** Application Observability and Maintenance
+**CKS Topics:** Monitoring, Logging and Runtime Security
+- [ ] Practice: `kubectl logs -f deployment/exam-study-app`
+- [ ] Practice: `kubectl exec -it <pod> -- sh`
+- [ ] Practice: `kubectl describe pod <pod>`
+- [ ] Practice: `kubectl get events --sort-by=.lastTimestamp`
+- [ ] Practice: Debug CrashLoopBackOff
+- [ ] Practice: Debug ImagePullBackOff
+- [ ] Practice: Debug pending pods (resource constraints)
+
+### 7.12 Kustomize
+**CKAD Topics:** Application Deployment
+- [x] Create base kustomization.yaml (`k8s/base/kustomization.yaml`)
+- [x] Create dev overlay (`k8s/overlays/dev/`)
+  - [x] Namespace: exam-study-dev
+  - [x] Image tag: :dev
+  - [x] Reduced resources
+  - [x] NodePort: 30001
+- [x] Create prod overlay (`k8s/overlays/prod/`)
+  - [x] Namespace: exam-study-prod
+  - [x] Image tag: :latest
+  - [x] Higher resources and replicas
+  - [x] NodePort: 30000
+- [x] Practice: `kubectl apply -k k8s/overlays/dev/`
+- [x] Configure environment-specific patches
+
+### 7.13 ArgoCD GitOps
+**CKAD Topics:** Application Deployment, GitOps patterns
+**CKS Topics:** Supply Chain Security
+- [x] Create ArgoCD project (`k8s/argocd/project.yaml`)
+- [x] Create dev Application with auto-sync (`k8s/argocd/application-dev.yaml`)
+  - [x] Watches `dev` branch
+  - [x] Auto-sync enabled (prune, selfHeal)
+  - [x] Deploys to exam-study-dev namespace
+- [x] Create prod Application with manual sync (`k8s/argocd/application-prod.yaml`)
+  - [x] Watches `main` branch
+  - [x] Manual sync only (approval required)
+  - [x] Deploys to exam-study-prod namespace
+- [x] Configure ArgoCD Image Updater annotations
+- [x] Create Helm setup script (`scripts/setup-helm.sh`)
+- [x] Create Helm teardown script (`scripts/teardown-helm.sh`)
+- [x] Create start/stop scripts (`scripts/start.sh`, `scripts/stop.sh`)
+- [ ] Practice: Deploy via ArgoCD UI
+- [ ] Practice: Manual sync for prod promotion
+- [ ] Practice: Rollback using ArgoCD
+
+### 7.14 GitHub Actions CI/CD
+**Topics:** Continuous Integration, Container Security
+- [x] Create CI workflow (`.github/workflows/ci.yml`)
+  - [x] Lint, typecheck, build, test
+  - [x] Parallel jobs with concurrency control
+  - [x] PostgreSQL service container for tests
+- [x] Create Docker build verification (`.github/workflows/docker-build.yml`)
+  - [x] Trivy security scanning
+  - [x] Hadolint Dockerfile linting
+  - [x] K8s manifest validation (kubeconform)
+- [x] Create dev image workflow (`.github/workflows/docker-dev.yml`)
+  - [x] Triggers on push to `dev` branch
+  - [x] Builds and pushes `:dev` tag to GHCR
+- [x] Create prod image workflow (`.github/workflows/docker-publish.yml`)
+  - [x] Triggers on GitHub releases
+  - [x] Multi-arch builds (amd64, arm64)
+  - [x] SBOM generation
+  - [x] Pushes `:latest` and version tags
+- [x] Create PR checks workflow (`.github/workflows/pr-checks.yml`)
+- [x] Create CodeQL security analysis (`.github/workflows/codeql.yml`)
+- [x] Create dependency review (`.github/workflows/dependency-review.yml`)
+- [x] Configure Dependabot (`.github/dependabot.yml`)
+- [ ] Practice: Create PR and observe checks
+- [ ] Practice: Create release and observe image build
+
+### 7.15 Practice Exercises
+Create hands-on exercises for exam prep:
+- [ ] `k8s/exercises/01-create-deployment.md` - Create deployment from scratch
+- [ ] `k8s/exercises/02-expose-service.md` - Expose as ClusterIP, NodePort, LoadBalancer
+- [ ] `k8s/exercises/03-configure-probes.md` - Add health checks
+- [ ] `k8s/exercises/04-configmap-secret.md` - Configuration management
+- [ ] `k8s/exercises/05-persistent-storage.md` - PV/PVC setup
+- [ ] `k8s/exercises/06-network-policy.md` - Implement network isolation
+- [ ] `k8s/exercises/07-rbac.md` - Configure RBAC
+- [ ] `k8s/exercises/08-security-context.md` - Harden pod security
+- [ ] `k8s/exercises/09-troubleshooting.md` - Debug failing pods
+- [ ] `k8s/exercises/10-scaling.md` - HPA and manual scaling
+
+**Deliverables:**
+- Production-ready Kubernetes deployment
+- Security hardening following CKS best practices
+- Practice exercises covering CKAD/CKS topics
+- Hands-on experience with real application
+- Ready for CKAD/CKS exam practice
+
+---
+
 ## Quick Reference: Docs by Topic
 
 | Topic | Primary Doc | Supporting Docs |
@@ -354,7 +553,11 @@ Before starting this phase, read:
 | **User journeys** | `04-user-flows.md` | `01-product-description.md` |
 | **UI components** | `05-frontend-design.md` | `04-user-flows.md` |
 | **API endpoints** | `06-api-specification.md` | `03-data-schema.md` |
-| **Docker/Deploy** | `08-deployment-guide.md` | `02-technical-architecture.md` |
+| **Kubernetes/Deploy** | `08-deployment-guide.md` | `10-infrastructure-access.md` |
+| **GitOps/ArgoCD** | `08-deployment-guide.md` | `10-infrastructure-access.md` |
+| **Question Format** | `09-question-format.md` | `03-data-schema.md` |
+| **Infrastructure Access** | `10-infrastructure-access.md` | - |
+| **CI/CD** | `.github/workflows/` | `08-deployment-guide.md` |
 
 ---
 
@@ -362,14 +565,25 @@ Before starting this phase, read:
 
 | Phase | Tasks | Priority | Key Docs to Read |
 |-------|-------|----------|------------------|
-| 1. Foundation | 18 | Critical | 02, 03, 05, 08 |
+| 1. Foundation | 25 | Critical | 02, 03, 05, 08 |
 | 2. Admin & Import | 20 | Critical | 03, 04, 06 |
 | 3. Study Features | 22 | Critical | 04, 05, 06 |
 | 4. Spaced Repetition | 15 | High | 03, 04, 06 |
 | 5. Analytics | 14 | Medium | 03, 04, 05, 06 |
 | 6. Polish & PWA | 20 | Medium | 01, 05, 08 |
+| 7. Advanced K8s (CKAD/CKS) | 85 | Optional | 08, ArgoCD docs |
 
-**Total: ~109 tasks**
+**Total: ~201 tasks** (116 core + 85 Kubernetes/GitOps learning)
+
+### Phase 7 Breakdown
+
+| Section | Tasks | Status |
+|---------|-------|--------|
+| 7.1-7.11 Basic K8s | 45 | Pending |
+| 7.12 Kustomize | 8 | ✅ Complete |
+| 7.13 ArgoCD GitOps | 12 | Mostly Complete |
+| 7.14 GitHub Actions | 12 | ✅ Complete |
+| 7.15 Practice Exercises | 10 | Pending |
 
 ---
 
@@ -377,19 +591,24 @@ Before starting this phase, read:
 
 ```
 Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4
-   │                        │
-   │                        ▼
-   └──────────────────► Phase 5
-                            │
-                            ▼
-                        Phase 6
+   │                        │           │
+   │                        ▼           │
+   └──────────────────► Phase 5        │
+                            │           │
+                            ▼           │
+                        Phase 6        │
+                                       │
+                                       ▼
+                                   Phase 7
+                              (CKAD/CKS Learning)
 ```
 
-- Phase 2 requires Phase 1 (database, layout)
+- Phase 2 requires Phase 1 (database, layout, Kubernetes basics)
 - Phase 3 requires Phase 2 (questions in database)
 - Phase 4 requires Phase 3 (answer tracking)
 - Phase 5 requires Phase 3 (answer data for analytics)
 - Phase 6 can start after Phase 3 is stable
+- Phase 7 can start after Phase 4 (working app in Kubernetes)
 
 ---
 
@@ -411,5 +630,10 @@ When implementing each phase:
 | Add API endpoint | `06-api-specification.md` | (find endpoint) |
 | Create component | `05-frontend-design.md` | Key Components |
 | Add page/route | `02-technical-architecture.md` | Project Structure |
-| Docker config | `08-deployment-guide.md` | Docker Configuration |
+| Kubernetes config | `08-deployment-guide.md` | Kubernetes Configuration |
 | Handle errors | `06-api-specification.md` | Error Responses |
+| K8s security (CKS) | `08-deployment-guide.md` | Security Hardening |
+| ArgoCD/GitOps | `k8s/argocd/README.md` | Full document |
+| Kustomize overlays | `k8s/overlays/` | kustomization.yaml |
+| GitHub Actions | `.github/workflows/` | Workflow files |
+| Multi-environment | `08-deployment-guide.md` | GitOps with ArgoCD |

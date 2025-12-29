@@ -4,31 +4,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Exam Study App is a self-hosted Next.js 16 web application for studying certification exam questions with spaced repetition (SM-2 algorithm) and analytics. It's a single-user app designed to run in Docker with PostgreSQL.
+Exam Study App is a self-hosted Next.js 16 web application for studying certification exam questions with spaced repetition (SM-2 algorithm) and analytics. It's a single-user app designed to run in Kubernetes (Docker Desktop) with PostgreSQL. Also serves as a CKAD/CKS learning platform.
 
 ## Commands
 
 ```bash
 # Development
 npm install                      # Install dependencies
-docker compose up -d db          # Start PostgreSQL only
+kubectl apply -f k8s/base/postgres/  # Start PostgreSQL in K8s
+kubectl port-forward svc/postgres 5432:5432 -n exam-study &  # Port-forward DB
 npx prisma migrate dev           # Run migrations (dev)
 npm run dev                      # Start dev server at localhost:3000
 
-# Production
-docker compose up --build        # Build and start all services
-docker compose up -d             # Start detached
+# Production (Kubernetes)
+docker build -t exam-study-app:latest .  # Build Docker image
+kubectl apply -f k8s/base/       # Deploy all to Kubernetes
+kubectl get pods -n exam-study -w  # Watch pod status
+open http://localhost:30000      # Access the app
 
 # Database
 npx prisma migrate deploy        # Run migrations (prod)
 npx prisma studio                # Visual database editor at localhost:5555
-docker compose exec db psql -U study -d study  # Database shell
+kubectl exec -it deploy/postgres -n exam-study -- psql -U study -d study  # Database shell
 
-# Docker Management
-docker compose logs -f app       # View app logs
-docker compose exec app npx prisma migrate deploy  # Run migrations in container
-docker compose down              # Stop services
-docker compose down -v           # Stop and delete all data
+# Kubernetes Management
+kubectl get all -n exam-study    # View all resources
+kubectl logs -f deploy/exam-study-app -n exam-study  # View app logs
+kubectl rollout restart deploy/exam-study-app -n exam-study  # Restart app
+kubectl delete namespace exam-study  # Remove everything
+
+# Helm (ArgoCD + Kubernetes Dashboard)
+./scripts/setup-helm.sh          # Install ArgoCD, Image Updater, K8s Dashboard
+./scripts/teardown-helm.sh       # Uninstall all Helm releases
+helm list -A                     # List all Helm releases
+kubectl port-forward svc/argocd-server -n argocd 8080:443 &  # ArgoCD UI
+kubectl -n kubernetes-dashboard port-forward svc/kubernetes-dashboard-kong-proxy 8443:443 &  # K8s Dashboard
+kubectl get applications -n argocd  # Check ArgoCD sync status
+```
+
+## Git Branching Strategy
+
+```
+dev branch    → builds :dev image    → auto-deploys to localhost:30001
+main branch   → builds :latest image → manual deploy to localhost:30000
 ```
 
 ## Architecture
@@ -37,7 +55,7 @@ docker compose down -v           # Stop and delete all data
 - **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui, Recharts 3, Zustand 5
 - **Backend**: Next.js API Routes, Prisma ORM 7
 - **Database**: PostgreSQL 18 with JSONB for flexible question storage
-- **Infrastructure**: Docker Compose (app + db containers), Node.js 22 LTS
+- **Infrastructure**: Kubernetes (Docker Desktop), Helm, ArgoCD, Node.js 22 LTS
 
 ### Key Design Decisions
 - Questions stored as JSONB in PostgreSQL for flexible schema
@@ -86,6 +104,7 @@ src/
 ## Documentation
 
 Comprehensive documentation is in `.claude/docs/`:
+- `00-quick-reference.md` - Compact reference for common tasks
 - `01-product-description.md` - Features, user goals, success metrics
 - `02-technical-architecture.md` - Tech stack, data flows, design decisions
 - `03-data-schema.md` - Prisma schema, JSONB structures, common queries
@@ -93,7 +112,9 @@ Comprehensive documentation is in `.claude/docs/`:
 - `05-frontend-design.md` - Design system, component specs, responsive breakpoints
 - `06-api-specification.md` - All endpoints with request/response examples
 - `07-implementation-tasks.md` - Phased implementation checklist with doc references
-- `08-deployment-guide.md` - Docker setup, environment variables, troubleshooting
+- `08-deployment-guide.md` - Kubernetes setup, environment variables, troubleshooting
+- `09-question-format.md` - Markdown question format specification for imports
+- `10-infrastructure-access.md` - ArgoCD, Kubernetes, PostgreSQL access & credentials
 
 ## Implementation Notes
 

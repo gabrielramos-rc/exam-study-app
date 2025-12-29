@@ -44,3 +44,31 @@ next-env.d.ts
 # IDE
 .idea/
 .vscode/
+
+# Lighthouse CI
+.lighthouseci/
+
+# Kubernetes
+kubeconfig*
+*.kubeconfig
+k8s/**/secrets.local.yaml
+k8s/**/secret.local.yaml
+
+# Docker
+docker-compose.override.yml
+docker-compose.local.yml
+
+# ArgoCD (local)
+argocd-password.txt
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# OS files
+Thumbs.db
+
+# Logs
+logs/
+*.log
