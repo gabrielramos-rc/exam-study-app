@@ -25,13 +25,13 @@ Before starting this phase, read:
 
 ### 1.2 Styling Setup
 **Read:** `05-frontend-design.md` (Design System section)
-- [ ] Initialize shadcn/ui
+- [x] Initialize shadcn/ui
   ```bash
   npx shadcn-ui@latest init
   ```
-- [ ] Configure dark theme as default
-- [ ] Install core components: Button, Card, Badge, Input, Dialog
-- [ ] Set up global CSS variables
+- [x] Configure dark theme as default
+- [x] Install core components: Button, Card, Badge, Input, Dialog
+- [x] Set up global CSS variables
 
 ### 1.3 Database Setup
 **Read:** `03-data-schema.md` (full document)

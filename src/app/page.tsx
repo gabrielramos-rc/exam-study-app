@@ -1,29 +1,41 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-zinc-950">
-      <main className="flex w-full max-w-2xl flex-col items-center gap-8 px-8 py-16 text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+    <main className="min-h-screen bg-background p-8">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <h1 className="text-3xl font-bold text-foreground">
           Exam Study App
         </h1>
-        <p className="max-w-md text-lg text-zinc-600 dark:text-zinc-400">
-          Self-hosted exam study application with spaced repetition (SM-2) and
-          analytics.
+        <p className="text-muted-foreground">
+          Styling setup verification
         </p>
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <a
-            href="/admin"
-            className="inline-flex h-12 items-center justify-center rounded-lg bg-zinc-900 px-6 font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            Manage Exams
-          </a>
-          <a
-            href="/study"
-            className="inline-flex h-12 items-center justify-center rounded-lg border border-zinc-300 bg-white px-6 font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
-          >
-            Start Studying
-          </a>
-        </div>
-      </main>
-    </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Component Test</CardTitle>
+            <CardDescription>
+              Verify that shadcn/ui components are working correctly
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Badge>Default</Badge>
+              <Badge variant="secondary">Secondary</Badge>
+              <Badge variant="destructive">Destructive</Badge>
+              <Badge variant="outline">Outline</Badge>
+            </div>
+            <div className="flex gap-2">
+              <Button>Primary Button</Button>
+              <Button variant="secondary">Secondary</Button>
+              <Button variant="outline">Outline</Button>
+              <Button variant="destructive">Destructive</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   );
 }
