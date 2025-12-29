@@ -29,6 +29,7 @@ echo "  - OPA Gatekeeper (Policy)"
 echo "  - Sealed Secrets (Encrypted Secrets)"
 echo "  - Trivy Operator (Vulnerability Scanning)"
 echo "  - Jaeger (Distributed Tracing)"
+echo "  - PostgreSQL (Dev + Prod databases)"
 echo ""
 
 # Check prerequisites
@@ -72,6 +73,96 @@ helm repo add aqua https://aquasecurity.github.io/helm-charts/ 2>/dev/null || tr
 helm repo add jaegertracing https://jaegertracing.github.io/helm-charts 2>/dev/null || true
 helm repo update
 echo -e "${GREEN}✓ Helm repos added${NC}"
+
+# Step 1.5: Install PostgreSQL in dev and prod namespaces
+echo ""
+echo -e "${YELLOW}Step 1.5: Installing PostgreSQL databases...${NC}"
+
+# Add Bitnami repo if not already added
+helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null || true
+helm repo update
+
+# Function to setup PostgreSQL in a namespace
+setup_postgres() {
+    local NAMESPACE=$1
+
+    # Validate namespace parameter
+    if [[ -z "$NAMESPACE" ]]; then
+        echo -e "${RED}Error: NAMESPACE parameter is required${NC}"
+        return 1
+    fi
+
+    # Validate namespace pattern (lowercase letters, numbers, hyphens, must start with letter)
+    if [[ ! "$NAMESPACE" =~ ^[a-z][a-z0-9-]*$ ]]; then
+        echo -e "${RED}Error: Invalid namespace format: $NAMESPACE${NC}"
+        echo -e "${RED}Namespace must start with a letter and contain only lowercase letters, numbers, and hyphens${NC}"
+        return 1
+    fi
+
+    echo ""
+    echo -e "${YELLOW}Setting up PostgreSQL in ${NAMESPACE}...${NC}"
+
+    # Check if secret already exists (to preserve passwords on re-run)
+    if kubectl get secret postgres-credentials -n "$NAMESPACE" &> /dev/null; then
+        echo -e "${YELLOW}Using existing postgres-credentials secret${NC}"
+        POSTGRES_PASSWORD=$(kubectl get secret postgres-credentials -n "$NAMESPACE" -o jsonpath='{.data.postgres-password}' | base64 -d)
+    else
+        # Generate random password
+        POSTGRES_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=' | head -c 24)
+
+        # Create secret with credentials
+        kubectl create secret generic postgres-credentials \
+            --namespace "$NAMESPACE" \
+            --from-literal=postgres-password="$POSTGRES_PASSWORD" \
+            --from-literal=postgres-user="study" \
+            --from-literal=postgres-db="study" \
+            --from-literal=database-url="postgresql://study:${POSTGRES_PASSWORD}@postgres-postgresql:5432/study"
+        echo -e "${GREEN}✓ Created postgres-credentials secret in ${NAMESPACE}${NC}"
+    fi
+
+    # Install or upgrade PostgreSQL
+    if helm status postgres -n "$NAMESPACE" &> /dev/null; then
+        echo -e "${YELLOW}PostgreSQL already installed in ${NAMESPACE}, upgrading...${NC}"
+        helm upgrade postgres bitnami/postgresql --namespace "$NAMESPACE" \
+            --set auth.username=study \
+            --set auth.password="$POSTGRES_PASSWORD" \
+            --set auth.database=study \
+            --set primary.persistence.size=5Gi \
+            --set primary.resources.requests.memory=256Mi \
+            --set primary.resources.requests.cpu=250m \
+            --set primary.resources.limits.memory=512Mi \
+            --set primary.resources.limits.cpu=500m \
+            --wait --timeout 5m
+    else
+        helm install postgres bitnami/postgresql --namespace "$NAMESPACE" \
+            --set auth.username=study \
+            --set auth.password="$POSTGRES_PASSWORD" \
+            --set auth.database=study \
+            --set primary.persistence.size=5Gi \
+            --set primary.resources.requests.memory=256Mi \
+            --set primary.resources.requests.cpu=250m \
+            --set primary.resources.limits.memory=512Mi \
+            --set primary.resources.limits.cpu=500m \
+            --wait --timeout 5m
+    fi
+    echo -e "${GREEN}✓ PostgreSQL installed in ${NAMESPACE}${NC}"
+
+    # Store password for later display
+    if [ "$NAMESPACE" = "exam-study-dev" ]; then
+        DEV_POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
+    else
+        PROD_POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
+    fi
+}
+
+# Setup PostgreSQL in both namespaces
+kubectl create namespace exam-study-dev --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace exam-study-prod --dry-run=client -o yaml | kubectl apply -f -
+
+setup_postgres "exam-study-dev"
+setup_postgres "exam-study-prod"
+
+echo -e "${GREEN}✓ PostgreSQL installed in both namespaces${NC}"
 
 # Step 2: Install ArgoCD
 echo ""
@@ -410,6 +501,22 @@ echo ""
 echo -e "${YELLOW}╔══════════════════════════════════════╗${NC}"
 echo -e "${YELLOW}║           CREDENTIALS                ║${NC}"
 echo -e "${YELLOW}╚══════════════════════════════════════╝${NC}"
+echo ""
+echo -e "${BLUE}PostgreSQL (Dev - exam-study-dev):${NC}"
+echo "  Host:     postgres-postgresql.exam-study-dev"
+echo "  Port:     5432 (cluster) / 5432 (port-forward)"
+echo "  Database: study"
+echo "  Username: study"
+echo "  Password: (stored in secret)"
+echo "  Retrieve: kubectl get secret postgres-credentials -n exam-study-dev -o jsonpath='{.data.postgres-password}' | base64 -d"
+echo ""
+echo -e "${BLUE}PostgreSQL (Prod - exam-study-prod):${NC}"
+echo "  Host:     postgres-postgresql.exam-study-prod"
+echo "  Port:     5432 (cluster) / 5433 (port-forward)"
+echo "  Database: study"
+echo "  Username: study"
+echo "  Password: (stored in secret)"
+echo "  Retrieve: kubectl get secret postgres-credentials -n exam-study-prod -o jsonpath='{.data.postgres-password}' | base64 -d"
 echo ""
 echo -e "${BLUE}ArgoCD:${NC}"
 echo "  URL:      https://localhost:8080"

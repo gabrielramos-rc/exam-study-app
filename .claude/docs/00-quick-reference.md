@@ -316,8 +316,30 @@ k8s/base/              # Kustomize base
 k8s/overlays/dev/      # Dev environment (port 30001)
 k8s/overlays/prod/     # Prod environment (port 30000)
 
-# PostgreSQL (via Helm - managed by setup-postgres.sh)
+# PostgreSQL (via Helm - managed by setup-helm-essentials.sh)
 postgres-credentials   # Secret with random password (auto-generated)
+```
+
+### PostgreSQL (Helm)
+
+```bash
+# Setup (included in setup-helm-essentials.sh)
+helm install postgres bitnami/postgresql -n exam-study-dev \
+  --set auth.username=study --set auth.database=study
+
+# Port-forward (automated via start.sh)
+kubectl port-forward svc/postgres-postgresql -n exam-study-dev 5432:5432 &
+kubectl port-forward svc/postgres-postgresql -n exam-study-prod 5433:5432 &
+
+# Get password
+kubectl get secret postgres-credentials -n exam-study-dev \
+  -o jsonpath='{.data.postgres-password}' | base64 -d
+
+# Database shell
+kubectl exec -it postgres-postgresql-0 -n exam-study-dev -- psql -U study -d study
+
+# Verify connection
+kubectl exec postgres-postgresql-0 -n exam-study-dev -- pg_isready -U study
 ```
 
 ---

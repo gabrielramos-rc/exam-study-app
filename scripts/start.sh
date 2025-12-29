@@ -45,6 +45,7 @@ pkill -f "port-forward.*prometheus-grafana" 2>/dev/null || true
 pkill -f "port-forward.*pgadmin" 2>/dev/null || true
 pkill -f "port-forward.*kiali" 2>/dev/null || true
 pkill -f "port-forward.*jaeger" 2>/dev/null || true
+pkill -f "port-forward.*postgres-postgresql" 2>/dev/null || true
 sleep 1
 echo -e "${GREEN}✓ Cleanup complete${NC}"
 
@@ -102,6 +103,32 @@ if kubectl get svc pgadmin-pgadmin4 -n pgadmin &> /dev/null; then
     fi
 else
     echo -e "${YELLOW}⚠ pgAdmin not installed${NC}"
+fi
+
+# PostgreSQL Dev (5432)
+if kubectl get svc postgres-postgresql -n exam-study-dev &> /dev/null; then
+    kubectl port-forward svc/postgres-postgresql -n exam-study-dev 5432:5432 &> /dev/null &
+    sleep 1
+    if lsof -i :5432 &> /dev/null; then
+        echo -e "${GREEN}✓ PostgreSQL Dev: localhost:5432${NC}"
+    else
+        echo -e "${RED}✗ PostgreSQL Dev port-forward failed${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠ PostgreSQL (dev) not installed${NC}"
+fi
+
+# PostgreSQL Prod (5433)
+if kubectl get svc postgres-postgresql -n exam-study-prod &> /dev/null; then
+    kubectl port-forward svc/postgres-postgresql -n exam-study-prod 5433:5432 &> /dev/null &
+    sleep 1
+    if lsof -i :5433 &> /dev/null; then
+        echo -e "${GREEN}✓ PostgreSQL Prod: localhost:5433${NC}"
+    else
+        echo -e "${RED}✗ PostgreSQL Prod port-forward failed${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠ PostgreSQL (prod) not installed${NC}"
 fi
 
 # Kiali (20001)
