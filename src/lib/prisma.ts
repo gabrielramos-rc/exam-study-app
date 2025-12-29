@@ -9,6 +9,22 @@ const globalForPrisma = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
+/**
+ * Parse and validate an integer environment variable.
+ * Throws an error if the value is not a valid integer.
+ */
+function parseIntEnv(envVar: string, defaultValue: number): number {
+  const value = process.env[envVar];
+  if (value === undefined) {
+    return defaultValue;
+  }
+  const parsed = parseInt(value, 10);
+  if (isNaN(parsed)) {
+    throw new Error(`Invalid ${envVar}: "${value}" is not a valid integer`);
+  }
+  return parsed;
+}
+
 function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL;
 
@@ -16,12 +32,17 @@ function createPrismaClient(): PrismaClient {
     throw new Error('DATABASE_URL environment variable is not set');
   }
 
+  // Parse and validate pool configuration
+  const poolMax = parseIntEnv('DB_POOL_MAX', 10);
+  const poolIdleTimeout = parseIntEnv('DB_POOL_IDLE_TIMEOUT', 10000);
+  const poolConnectTimeout = parseIntEnv('DB_POOL_CONNECT_TIMEOUT', 5000);
+
   // Reuse existing pool in development to prevent leaks during hot-reload
   const pool = globalForPrisma.pool ?? new Pool({
     connectionString,
-    max: parseInt(process.env.DB_POOL_MAX ?? '10', 10),
-    idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT ?? '10000', 10),
-    connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECT_TIMEOUT ?? '5000', 10),
+    max: poolMax,
+    idleTimeoutMillis: poolIdleTimeout,
+    connectionTimeoutMillis: poolConnectTimeout,
   });
   globalForPrisma.pool = pool;
   const adapter = new PrismaPg(pool);
