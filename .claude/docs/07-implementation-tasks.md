@@ -662,9 +662,9 @@ Create hands-on exercises for exam prep:
 | 4. Spaced Repetition | 15 | High | 03, 04, 06 |
 | 5. Analytics | 14 | Medium | 03, 04, 05, 06 |
 | 6. Polish & PWA | 22 | Medium | 01, 05, 08 |
-| 7. Advanced K8s (CKAD/CKS) | 86 | Optional | 08, ArgoCD docs |
+| 7. Advanced K8s (CKAD/CKS) | 89 | Optional | 08, ArgoCD docs |
 
-**Total: ~211 tasks** (123 core + 88 Kubernetes/GitOps learning)
+**Total: ~212 tasks** (123 core + 89 Kubernetes/GitOps learning)
 
 ### Phase 7 Breakdown
 

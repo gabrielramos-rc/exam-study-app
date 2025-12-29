@@ -346,6 +346,8 @@ FROM node:24-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+# Required for Next.js standalone to bind to all interfaces (not just 127.0.0.1)
+ENV HOSTNAME=0.0.0.0
 
 # Copy built app
 COPY --from=builder /app/.next/standalone ./
