@@ -18,6 +18,7 @@ spec:
           image: ghcr.io/gabrielramos-rc/exam-study-app:latest
           # Use node directly since npx is removed from production image for security
           command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+          workingDir: /app
           env:
             - name: DATABASE_URL
               valueFrom:

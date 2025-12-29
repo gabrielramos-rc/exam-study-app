@@ -203,12 +203,13 @@ jobs:
             For each issue that was FIXED in this commit, reply with a resolved message:
 
             ```bash
+            # NOTE: Replace <EXISTING_COMMENT_ID> with the actual comment ID from Phase 1 results
             gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
               -X POST \
               -f body="✅ **Issue resolved** in commit \`$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)\`
 
             [Brief description of how it was fixed, e.g., 'Input is now properly sanitized using DOMPurify.']" \
-              -F in_reply_to=EXISTING_COMMENT_ID
+              -F in_reply_to=<EXISTING_COMMENT_ID>
             ```
 
             ### Step 4.2: Reply to UNRESOLVED issues (Category C)
@@ -216,6 +217,7 @@ jobs:
             For each issue that is STILL present:
 
             ```bash
+            # NOTE: Replace <EXISTING_COMMENT_ID> with the actual comment ID from Phase 1 results
             gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
               -X POST \
               -f body="**Update after commit \`$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)\`:**
@@ -223,7 +225,7 @@ jobs:
             This issue is still present. [Your specific observation about the current state]
 
             [If partial fix: explain what was fixed and what remains]" \
-              -F in_reply_to=EXISTING_COMMENT_ID
+              -F in_reply_to=<EXISTING_COMMENT_ID>
             ```
 
             ### Step 4.3: Create new review with NEW findings only (Category D)
@@ -252,6 +254,10 @@ jobs:
               -f 'comments[0][line]=<LINE_NUMBER>' \
               -f 'comments[0][body]=🔴 **Critical - Security Issue**
             # NOTE: Replace <FILE_PATH>, <LINE_NUMBER>, and body content with actual values from your findings
+            # For multiple issues, add comments[1], comments[2], etc.:
+            #   -f 'comments[1][path]=<FILE_PATH>' \
+            #   -f 'comments[1][line]=<LINE_NUMBER>' \
+            #   -f 'comments[1][body]=...'
 
             [Detailed explanation]
 
@@ -339,7 +345,7 @@ jobs:
             +  new line           <- line 11 (use this number)
             ```
 
-            The `+10,8` means new file starts at line 10. Count ` ` and `+` lines (skip `-` lines) to find the line number.
+            The `+10,8` means this hunk starts at line 10 in the new file and spans 8 lines. Count ` ` (context) and `+` (added) lines from that starting point; skip `-` (removed) lines.
 
           claude_args: '--allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr review:*),Bash(gh api:*),Read,Glob,Grep"'
 
