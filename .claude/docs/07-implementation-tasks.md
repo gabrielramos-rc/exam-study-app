@@ -150,6 +150,18 @@ Before starting this phase, read:
 - [x] **[PR #20]** Consider using Zod for request validation
   - File: `src/lib/validations/exam.ts` (new), `src/app/api/exams/route.ts`, `src/components/exam/exam-form.tsx`
   - Note: Created shared Zod schemas: `examFormSchema` for frontend, `createExamSchema` with transforms for API
+- [x] **[PR #20 - HIGH]** Fix whitespace-only name bypassing validation
+  - File: `src/lib/validations/exam.ts`
+  - Note: Added `.refine()` after transform to validate trimmed name length
+  - Reporter: sentry[bot]
+- [x] **[PR #20]** Fix inconsistent empty-string handling between create and update schemas
+  - File: `src/lib/validations/exam.ts`
+  - Note: Both schemas now consistently convert empty description to null
+  - Reporter: coderabbitai[bot]
+- [ ] **[PR #20 - HIGH]** Add unique constraint on exam name to prevent race condition
+  - File: `prisma/schema.prisma`
+  - Note: Check-then-act pattern has race condition; requires DB-level unique constraint and catching unique violation error
+  - Reporter: sentry[bot]
 
 ### 2.2 ZIP Upload
 
