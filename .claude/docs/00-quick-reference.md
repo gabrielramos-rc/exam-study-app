@@ -469,7 +469,31 @@ UPLOAD_MAX_SIZE=52428800  # 50MB
 
 ## shadcn/ui Components Used
 
-Button, Card, Badge, Progress, Dialog, DropdownMenu, Tabs, Input, Textarea, Select, Checkbox, RadioGroup, Toast, Skeleton
+Button, Card, Badge, Progress, Dialog, AlertDialog, DropdownMenu, Tabs, Input, Textarea, Select, Checkbox, RadioGroup, Toast, Skeleton
+
+---
+
+## Form Validation Libraries
+
+```bash
+npm install react-hook-form zod @hookform/resolvers
+```
+
+```typescript
+// Usage pattern
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+const schema = z.object({
+  name: z.string().min(1, 'Required').max(200),
+  description: z.string().max(1000).optional(),
+});
+
+const { register, handleSubmit, formState: { errors } } = useForm({
+  resolver: zodResolver(schema),
+});
+```
 
 ---
 

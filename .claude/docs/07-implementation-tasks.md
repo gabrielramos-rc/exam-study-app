@@ -118,13 +118,13 @@ Before starting this phase, read:
 ### 2.1 Exam Management
 
 **Read:** `06-api-specification.md` (Exams section)
-- [ ] Create exam list page (`/admin/exams`)
-- [ ] Create exam form component
-- [ ] Create new exam page (`/admin/exams/new`)
-- [ ] Implement `POST /api/exams` endpoint
-- [ ] Implement `GET /api/exams` endpoint
-- [ ] Implement `DELETE /api/exams/{id}` endpoint
-- [ ] Create exam detail page (`/admin/exams/[id]`)
+- [x] Create exam list page (`/admin/exams`)
+- [x] Create exam form component
+- [x] Create new exam page (`/admin/exams/new`)
+- [x] Implement `POST /api/exams` endpoint
+- [x] Implement `GET /api/exams` endpoint
+- [x] Implement `DELETE /api/exams/{id}` endpoint
+- [x] Create exam detail page (`/admin/exams/[id]`)
 
 ### 2.2 ZIP Upload
 

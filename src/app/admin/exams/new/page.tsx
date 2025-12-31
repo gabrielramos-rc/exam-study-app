@@ -1,11 +1,17 @@
-import { MainLayout } from "@/components/layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+// src/app/admin/exams/new/page.tsx
+
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { MainLayout } from '@/components/layout';
+import { ExamForm } from '@/components/exam';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 export default function NewExamPage() {
+  const router = useRouter();
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -23,49 +29,7 @@ export default function NewExamPage() {
           </div>
         </div>
 
-        <Card className="max-w-2xl">
-          <CardHeader>
-            <CardTitle>Exam Details</CardTitle>
-            <CardDescription>
-              Enter the details for your new exam.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">
-                  Exam Name
-                </label>
-                <Input
-                  id="name"
-                  placeholder="e.g., AWS Solutions Architect"
-                  disabled
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="description" className="text-sm font-medium">
-                  Description
-                </label>
-                <Input
-                  id="description"
-                  placeholder="e.g., AWS SAA-C03 certification exam"
-                  disabled
-                />
-              </div>
-              <div className="flex gap-4">
-                <Button type="submit" disabled>
-                  Create Exam
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/admin/exams">Cancel</Link>
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Form functionality will be implemented in Phase 2.
-              </p>
-            </form>
-          </CardContent>
-        </Card>
+        <ExamForm onCancel={() => router.push('/admin/exams')} />
       </div>
     </MainLayout>
   );

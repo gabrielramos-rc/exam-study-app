@@ -1,5 +1,7 @@
 // src/types/index.ts
 
+export * from './exam';
+
 /**
  * Question data stored as JSONB in the database
  */
