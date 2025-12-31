@@ -185,13 +185,12 @@ export default function ExamDetailPage() {
                 </Link>
               </Button>
             )}
-            <Button variant={hasQuestions ? 'outline' : 'default'} disabled>
-              <Upload className="mr-2 h-4 w-4" />
-              Import Questions
+            <Button variant={hasQuestions ? 'outline' : 'default'} asChild>
+              <Link href={`/admin/exams/${exam.id}/import`}>
+                <Upload className="mr-2 h-4 w-4" />
+                Import Questions
+              </Link>
             </Button>
-            <p className="text-sm text-muted-foreground self-center">
-              Import will be available in Task 2.2-2.4
-            </p>
           </CardContent>
         </Card>
 
@@ -245,13 +244,12 @@ export default function ExamDetailPage() {
               <CardDescription className="text-center mb-4">
                 Import questions from a ZIP file to start studying.
               </CardDescription>
-              <Button disabled>
-                <Upload className="mr-2 h-4 w-4" />
-                Import Questions
+              <Button asChild>
+                <Link href={`/admin/exams/${exam.id}/import`}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import Questions
+                </Link>
               </Button>
-              <p className="text-sm text-muted-foreground mt-2">
-                Available in Task 2.2-2.4
-              </p>
             </CardContent>
           </Card>
         )}

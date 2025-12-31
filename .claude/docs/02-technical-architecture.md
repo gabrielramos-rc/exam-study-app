@@ -138,6 +138,9 @@ exam-study-app/
 │   │   │   ├── exam-form.tsx   # Create exam form
 │   │   │   ├── delete-exam-dialog.tsx  # Deletion confirmation
 │   │   │   └── index.ts        # Component exports
+│   │   ├── import/             # Import feature components
+│   │   │   ├── import-dropzone.tsx  # Drag-and-drop file upload
+│   │   │   └── index.ts        # Component exports
 │   │   ├── question/           # Question-related
 │   │   ├── admin/              # Admin-related
 │   │   ├── analytics/          # Charts and stats
@@ -145,6 +148,9 @@ exam-study-app/
 │   │
 │   ├── lib/                    # Utilities
 │   │   ├── prisma.ts           # Prisma client singleton
+│   │   ├── config/             # Configuration constants
+│   │   │   ├── upload.ts       # Upload size/type limits
+│   │   │   └── index.ts        # Config exports
 │   │   ├── parsers/
 │   │   │   ├── markdown.ts     # MD parser
 │   │   │   └── json.ts         # JSON validator

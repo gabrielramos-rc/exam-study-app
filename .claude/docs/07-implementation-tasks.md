@@ -170,10 +170,10 @@ Before starting this phase, read:
 ### 2.2 ZIP Upload
 
 **Read:** `04-user-flows.md` (Flow 5 - Import Questions)
-- [ ] Install react-dropzone
-- [ ] Create ImportDropzone component (see `05-frontend-design.md`)
-- [ ] Create upload progress indicator
-- [ ] Implement file validation (ZIP only, size limit)
+- [x] Install react-dropzone
+- [x] Create ImportDropzone component (see `05-frontend-design.md`)
+- [x] Create upload progress indicator
+- [x] Implement file validation (ZIP only, size limit)
 
 ### 2.3 Question Parsing
 
