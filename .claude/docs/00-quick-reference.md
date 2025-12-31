@@ -497,6 +497,14 @@ const { register, handleSubmit, formState: { errors } } = useForm({
 
 ---
 
+## File Upload
+
+- react-dropzone for drag-and-drop
+- `npm install react-dropzone`
+- Max file size: 50MB (configurable in `src/lib/config/upload.ts`)
+
+---
+
 ## Phase Dependencies
 
 ```

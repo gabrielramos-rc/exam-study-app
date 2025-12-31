@@ -70,7 +70,7 @@ export function ExamCard({ exam }: ExamCardProps) {
             </>
           ) : (
             <Button asChild size="sm">
-              <Link href={`/admin/exams/${exam.id}`}>Import Questions</Link>
+              <Link href={`/admin/exams/${exam.id}/import`}>Import Questions</Link>
             </Button>
           )}
         </div>
