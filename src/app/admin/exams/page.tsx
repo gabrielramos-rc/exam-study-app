@@ -16,12 +16,12 @@ export default function ExamsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchExams = async () => {
+  const fetchExams = async (signal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/exams');
+      const response = await fetch('/api/exams', { signal });
 
       if (!response.ok) {
         const errorData: ApiError = await response.json();
@@ -31,7 +31,12 @@ export default function ExamsPage() {
 
       const data: ExamListResponse = await response.json();
       setExams(data.exams);
-    } catch {
+    } catch (err) {
+      // Ignore abort errors - component was unmounted
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+      console.error('Failed to fetch exams:', err);
       setError('Failed to load exams. Please try again.');
     } finally {
       setIsLoading(false);
@@ -39,7 +44,12 @@ export default function ExamsPage() {
   };
 
   useEffect(() => {
-    fetchExams();
+    const abortController = new AbortController();
+    fetchExams(abortController.signal);
+
+    return () => {
+      abortController.abort();
+    };
   }, []);
 
   return (
@@ -73,7 +83,7 @@ export default function ExamsPage() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <CardTitle className="mb-2 text-destructive">Error</CardTitle>
               <CardDescription className="text-center mb-4">{error}</CardDescription>
-              <Button variant="outline" onClick={fetchExams}>
+              <Button variant="outline" onClick={() => fetchExams()}>
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Retry
               </Button>

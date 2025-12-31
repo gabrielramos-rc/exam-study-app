@@ -6,26 +6,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
+import { examFormSchema, type ExamFormInput } from '@/lib/validations/exam';
 import type { ApiError } from '@/types';
-
-const examSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Name is required')
-    .max(200, 'Name cannot exceed 200 characters'),
-  description: z
-    .string()
-    .max(1000, 'Description cannot exceed 1000 characters')
-    .optional(),
-});
-
-type ExamFormData = z.infer<typeof examSchema>;
 
 interface ExamFormProps {
   onCancel: () => void;
@@ -40,19 +27,20 @@ export function ExamForm({ onCancel }: ExamFormProps) {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<ExamFormData>({
-    resolver: zodResolver(examSchema),
+  } = useForm<ExamFormInput>({
+    resolver: zodResolver(examFormSchema),
     defaultValues: {
       name: '',
       description: '',
     },
   });
 
-  const onSubmit = async (data: ExamFormData) => {
+  const onSubmit = async (data: ExamFormInput) => {
     setIsSubmitting(true);
     setServerError(null);
 
     try {
+      // Schema handles trimming and null transformation
       const response = await fetch('/api/exams', {
         method: 'POST',
         headers: {
@@ -70,7 +58,8 @@ export function ExamForm({ onCancel }: ExamFormProps) {
       const result = await response.json();
       // Redirect to the exam detail page
       router.push(`/admin/exams/${result.id}`);
-    } catch {
+    } catch (err) {
+      console.error('Failed to create exam:', err);
       setServerError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);

@@ -125,18 +125,31 @@ Before starting this phase, read:
 - [x] Implement `GET /api/exams` endpoint
 - [x] Implement `DELETE /api/exams/{id}` endpoint
 - [x] Create exam detail page (`/admin/exams/[id]`)
-- [ ] **[PR #20]** Parallelize pre-deletion count queries for improved response time
+- [x] **[PR #20 - CRITICAL]** Fix N+1 query pattern in GET /api/exams endpoint
+  - File: `src/app/api/exams/route.ts:19-60`
+  - Note: Replaced with single aggregated raw SQL query using JOINs
+  - Reporters: sentry[bot], claude[bot]
+- [x] **[PR #20]** Add AbortController cleanup to prevent state updates on unmounted component
+  - File: `src/app/admin/exams/page.tsx:19-43`
+  - Note: Added AbortController with cleanup on unmount
+- [x] **[PR #20]** Parallelize pre-deletion count queries for improved response time
   - File: `src/app/api/exams/[examId]/route.ts:142-155`
-  - Note: Execute question IDs, answers count, and srsCards count queries in parallel using Promise.all
-- [ ] **[PR #20]** Log caught errors for debugging in exam form
+  - Note: Count queries now run in parallel using Promise.all
+- [x] **[PR #20]** Log caught errors for debugging in exam form
   - File: `src/components/exam/exam-form.tsx:73-74`
-  - Note: Empty catch clause discards error details; log error while keeping generic user message
-- [ ] **[PR #20]** Log caught errors for debugging in exams page
+  - Note: Added console.error while keeping generic user message
+- [x] **[PR #20]** Log caught errors for debugging in exams page
   - File: `src/app/admin/exams/page.tsx:34-35`
-  - Note: Preserve error details for development debugging
-- [ ] **[PR #20]** Align accuracy precision consistency in exam stats
+  - Note: Added console.error for development debugging
+- [x] **[PR #20]** Align accuracy precision consistency in exam stats
   - File: `src/app/api/exams/[examId]/route.ts:76-82`
-  - Note: bySection accuracy is integer while overall accuracy uses one decimal; align for consistency
+  - Note: bySection accuracy now uses one decimal precision matching overall accuracy
+- [x] **[PR #20]** Transform empty description to undefined/null for API consistency
+  - File: `src/components/exam/exam-form.tsx`
+  - Note: Empty descriptions now transformed to undefined before API call
+- [x] **[PR #20]** Consider using Zod for request validation
+  - File: `src/lib/validations/exam.ts` (new), `src/app/api/exams/route.ts`, `src/components/exam/exam-form.tsx`
+  - Note: Created shared Zod schemas: `examFormSchema` for frontend, `createExamSchema` with transforms for API
 
 ### 2.2 ZIP Upload
 
@@ -400,9 +413,9 @@ Before starting this phase, read:
 - [ ] Form validation messages
 - [ ] API error handling
 - [ ] Loading states everywhere
-- [ ] **[PR #20]** Remove unsupported `field-sizing-content` CSS property from textarea
+- [x] **[PR #20]** Remove unsupported `field-sizing-content` CSS property from textarea
   - File: `src/components/ui/textarea.tsx:5-16`
-  - Note: Property not supported in Firefox (any version) and Chrome only from v123+; remove or add fallback
+  - Note: Removed field-sizing-content class due to limited browser support
 
 ### 6.5 Performance
 
@@ -591,6 +604,9 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [x] Create Helm setup script (`scripts/setup-helm.sh`)
 - [x] Create Helm teardown script (`scripts/teardown-helm.sh`)
 - [x] Create start/stop scripts (`scripts/start.sh`, `scripts/stop.sh`)
+- [x] **[PR #20]** Fix PROJECT_DIR variable used before defined in setup-helm.sh
+  - File: `scripts/setup-helm.sh:279,334`
+  - Note: Moved SCRIPT_DIR and PROJECT_DIR definitions to early in script (after prerequisites check)
 - [ ] Practice: Deploy via ArgoCD UI
 - [ ] Practice: Manual sync for prod promotion
 - [ ] Practice: Rollback using ArgoCD
@@ -618,6 +634,9 @@ This phase expands Kubernetes knowledge using the exam study app for hands-on pr
 - [x] Create CodeQL security analysis (`.github/workflows/codeql.yml`)
 - [x] Create dependency review (`.github/workflows/dependency-review.yml`)
 - [x] Configure Dependabot (`.github/dependabot.yml`)
+- [x] **[PR #20 - CRITICAL]** Fix CI build failure - DATABASE_URL not set
+  - File: `.github/workflows/ci.yml` (Build job)
+  - Note: Added dummy DATABASE_URL env var to build step for Prisma client initialization
 - [ ] **[PR #11]** Add npm audit step to CI workflow for ongoing security monitoring
   - File: `.github/workflows/ci.yml`
   - Note: Trivy found CVE-2025-64756 in glob package; proactive auditing catches these earlier
@@ -641,12 +660,63 @@ Create hands-on exercises for exam prep:
 - [ ] `k8s/exercises/09-troubleshooting.md` - Debug failing pods
 - [ ] `k8s/exercises/10-scaling.md` - HPA and manual scaling
 
+### 7.16 Gateway API Configuration
+
+**Topics:** Kubernetes Gateway API, TLS, Routing
+- [ ] **[PR #20]** Fix kubernetes-dashboard HTTPRoute configuration
+  - File: `k8s/gateway/httproutes.yaml`
+  - Note: HTTPRoute references kubernetes-dashboard service but setup script may not deploy it in same namespace
+- [ ] **[PR #20]** Review kustomization file structure for gateway resources
+  - File: `k8s/gateway/kustomization.yaml`
+  - Note: Ensure all gateway resources are properly included in kustomization
+- [ ] **[PR #20]** Configure HTTP to HTTPS redirect on Gateway
+  - File: `k8s/gateway/gateway.yaml`
+  - Note: HTTP listener on port 80 allows unencrypted traffic; add redirect to HTTPS for better security
+- [ ] **[PR #20]** Consider stronger key algorithm for TLS certificate
+  - File: `k8s/gateway/certificate.yaml`
+  - Note: RSA 2048 is acceptable but RSA 4096 or ECDSA P-256 provides stronger cryptography
+- [ ] **[PR #20]** Remove redundant DNS names from certificate
+  - File: `k8s/gateway/certificate.yaml`
+  - Note: Wildcard `*.local.dev` already covers explicit subdomain entries; remove redundancy
+
 **Deliverables:**
 - Production-ready Kubernetes deployment
 - Security hardening following CKS best practices
 - Practice exercises covering CKAD/CKS topics
 - Hands-on experience with real application
 - Ready for CKAD/CKS exam practice
+
+---
+
+## Phase 8: Tooling & Documentation
+
+### Overview
+This phase covers developer tooling configuration, documentation quality, and Claude Code settings. These are lower priority items that improve developer experience and documentation consistency.
+
+### 8.1 Claude Code Settings
+
+**Topics:** Developer Tooling, Security Configuration
+- [x] **[PR #20 - CRITICAL]** Review permission allow/deny rule precedence in settings
+  - File: `.claude/settings.json`
+  - Note: Confirmed specific allows (curl localhost) correctly override general deny (curl:*); Claude Code uses most-specific-match precedence
+- [x] **[PR #20]** Add more comprehensive rm restrictions
+  - File: `.claude/settings.json`
+  - Note: Added `rm -rf .`, `rm -rf ./`, `rm -rf ..`, `rm -rf ../`, `rm -rf /*` to deny list
+
+### 8.2 Documentation Quality
+
+**Topics:** Markdown Standards, Code Examples
+- [ ] **[PR #20]** Add language identifiers to fenced code blocks in pr-followup.md
+  - File: `.claude/commands/pr-followup.md:21,58,81,97,305`
+  - Note: Missing language specifiers triggers markdownlint warnings
+- [ ] **[PR #20]** Fix sidebar active state logic in layout prompt
+  - File: `.claude/prompts/06-1.6-basic-layout.md`
+  - Note: Condition `pathname.startsWith(item.href)` can mark multiple navigation items as active (e.g., `/admin` and `/admin/exams`)
+
+**Deliverables:**
+- Secure Claude Code configuration
+- Consistent documentation formatting
+- Improved developer experience
 
 ---
 
@@ -672,14 +742,15 @@ Create hands-on exercises for exam prep:
 | Phase | Tasks | Priority | Key Docs to Read |
 |-------|-------|----------|------------------|
 | 1. Foundation | 30 | Critical | 02, 03, 05, 08 |
-| 2. Admin & Import | 24 | Critical | 03, 04, 06 |
+| 2. Admin & Import | 28 | Critical | 03, 04, 06 |
 | 3. Study Features | 22 | Critical | 04, 05, 06 |
 | 4. Spaced Repetition | 15 | High | 03, 04, 06 |
 | 5. Analytics | 14 | Medium | 03, 04, 05, 06 |
 | 6. Polish & PWA | 23 | Medium | 01, 05, 08 |
-| 7. Advanced K8s (CKAD/CKS) | 89 | Optional | 08, ArgoCD docs |
+| 7. Advanced K8s (CKAD/CKS) | 96 | Optional | 08, ArgoCD docs |
+| 8. Tooling & Documentation | 4 | Low | - |
 
-**Total: ~217 tasks** (128 core + 89 Kubernetes/GitOps learning)
+**Total: ~232 tasks** (132 core + 96 Kubernetes/GitOps + 4 tooling)
 
 ### Phase 7 Breakdown
 
@@ -687,9 +758,10 @@ Create hands-on exercises for exam prep:
 |---------|-------|--------|
 | 7.1-7.11 Basic K8s | 45 | Pending |
 | 7.12 Kustomize | 8 | ✅ Complete |
-| 7.13 ArgoCD GitOps | 12 | Mostly Complete |
-| 7.14 GitHub Actions | 14 | Mostly Complete |
+| 7.13 ArgoCD GitOps | 13 | Mostly Complete |
+| 7.14 GitHub Actions | 15 | Mostly Complete |
 | 7.15 Practice Exercises | 10 | Pending |
+| 7.16 Gateway API | 5 | Pending |
 
 ---
 
@@ -707,6 +779,8 @@ Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4
                                        ▼
                                    Phase 7
                               (CKAD/CKS Learning)
+
+Phase 8 (Tooling & Docs) ◄── No dependencies, can run anytime
 ```
 
 - Phase 2 requires Phase 1 (database, layout, Kubernetes basics)
@@ -715,6 +789,7 @@ Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4
 - Phase 5 requires Phase 3 (answer data for analytics)
 - Phase 6 can start after Phase 3 is stable
 - Phase 7 can start after Phase 4 (working app in Kubernetes)
+- Phase 8 has no dependencies (tooling/docs can be fixed anytime)
 
 ---
 

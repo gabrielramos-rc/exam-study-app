@@ -80,7 +80,11 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       section: s.section || 'Unknown',
       total: Number(s.total),
       correct: Number(s.correct),
-      accuracy: Number(s.total) > 0 ? Math.round((Number(s.correct) / Number(s.total)) * 100) : 0,
+      // Use consistent one-decimal precision matching overall accuracy
+      accuracy:
+        Number(s.total) > 0
+          ? Math.round((Number(s.correct) / Number(s.total)) * 100 * 10) / 10
+          : 0,
     }));
 
     return NextResponse.json({
@@ -142,19 +146,22 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     }
 
     // Get counts before deletion for response
+    // First get question IDs, then parallelize the count queries
     const questionIds = await prisma.question.findMany({
       where: { examId },
       select: { id: true },
     });
     const questionIdList = questionIds.map((q) => q.id);
 
-    const answersCount = await prisma.answer.count({
-      where: { questionId: { in: questionIdList } },
-    });
-
-    const srsCardsCount = await prisma.srsCard.count({
-      where: { questionId: { in: questionIdList } },
-    });
+    // Run count queries in parallel for better performance
+    const [answersCount, srsCardsCount] = await Promise.all([
+      prisma.answer.count({
+        where: { questionId: { in: questionIdList } },
+      }),
+      prisma.srsCard.count({
+        where: { questionId: { in: questionIdList } },
+      }),
+    ]);
 
     // Delete exam (cascades to questions, answers, srsCards, bookmarks, studyProgress)
     await prisma.exam.delete({

@@ -54,6 +54,10 @@ fi
 
 echo -e "${GREEN}✓ kubectl and helm are installed and connected${NC}"
 
+# Define project directory early (used by gateway and argocd setup)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
 # Step 1: Add Helm repos
 echo ""
 echo -e "${YELLOW}Step 1: Adding Helm repositories...${NC}"
@@ -330,8 +334,6 @@ echo -e "${GREEN}✓ pgAdmin installed${NC}"
 # Step 13: Apply ArgoCD applications
 echo ""
 echo -e "${YELLOW}Step 13: Applying ArgoCD applications...${NC}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 if [ -f "${PROJECT_DIR}/k8s/argocd/project.yaml" ]; then
     kubectl apply -f "${PROJECT_DIR}/k8s/argocd/project.yaml"
