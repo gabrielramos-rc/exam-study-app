@@ -100,7 +100,7 @@ model StudyProgress {
   id        String   @id @default(cuid())
   examId    String
   exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
-  name      String   @default("Default")
+  name      String   @default(dbgenerated("'Snapshot ' || to_char(now(), 'YYYY-MM-DD HH24:MI')"))
   data      Json     // Full progress snapshot
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

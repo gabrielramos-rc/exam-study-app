@@ -119,7 +119,7 @@ exam-study-app/
 │   │   │
 │   │   ├── admin/              # Admin pages
 │   │   │   ├── page.tsx
-│   │   │   ├── exams/
+│   │   │   ├── exams/          # exams/, exams/new/, exams/[examId]/
 │   │   │   └── progress/
 │   │   │
 │   │   └── api/                # API routes

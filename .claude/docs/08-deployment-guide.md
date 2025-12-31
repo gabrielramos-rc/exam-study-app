@@ -557,11 +557,14 @@ SELECT COUNT(*) FROM "Question";
 ### Prisma Studio
 
 ```bash
-# Port-forward PostgreSQL first
-kubectl port-forward svc/postgres 5432:5432 -n exam-study &
+# Port-forward PostgreSQL first (Helm-deployed)
+kubectl port-forward svc/postgres-postgresql 5432:5432 -n exam-study-dev &
+
+# Get the password from Kubernetes secret
+PGPASSWORD=$(kubectl get secret postgres-credentials -n exam-study-dev -o jsonpath='{.data.postgres-password}' | base64 -d)
 
 # Then run Prisma Studio locally
-DATABASE_URL="postgresql://study:study@localhost:5432/study" npx prisma studio
+DATABASE_URL="postgresql://study:${PGPASSWORD}@localhost:5432/study" npx prisma studio
 ```
 
 ---
