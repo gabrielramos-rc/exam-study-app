@@ -147,10 +147,8 @@ export default function ImportPage() {
             </ul>
             <p className="mt-4">
               See the{' '}
-              <Link href="/docs/question-format" className="text-primary hover:underline">
-                Question Format Guide
-              </Link>{' '}
-              for detailed formatting instructions.
+              <code className="bg-muted px-1 rounded">.claude/docs/09-question-format.md</code>{' '}
+              file for detailed formatting instructions.
             </p>
           </CardContent>
         </Card>

@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,19 @@ export function ImportDropzone({
     progress: initialProgress,
     result: null,
   });
+
+  // Ref to hold the current XHR for cleanup on unmount
+  const xhrRef = useRef<XMLHttpRequest | null>(null);
+
+  // Abort any pending upload when component unmounts
+  useEffect(() => {
+    return () => {
+      if (xhrRef.current) {
+        xhrRef.current.abort();
+        xhrRef.current = null;
+      }
+    };
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     // Reset state
@@ -117,6 +130,7 @@ export function ImportDropzone({
 
       // Create XMLHttpRequest for progress tracking
       const xhr = new XMLHttpRequest();
+      xhrRef.current = xhr;
 
       const uploadPromise = new Promise<ImportResult>((resolve, reject) => {
         xhr.upload.addEventListener('progress', (event) => {
@@ -174,6 +188,8 @@ export function ImportDropzone({
 
       const result = await uploadPromise;
 
+      xhrRef.current = null;
+
       setState(prev => ({
         ...prev,
         progress: {
@@ -185,6 +201,13 @@ export function ImportDropzone({
 
       onImportComplete?.(result);
     } catch (error) {
+      xhrRef.current = null;
+
+      // Don't update state if upload was cancelled (component unmounting)
+      if (error instanceof Error && error.message === 'Upload was cancelled') {
+        return;
+      }
+
       setState(prev => ({
         ...prev,
         progress: {
