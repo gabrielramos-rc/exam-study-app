@@ -162,6 +162,10 @@ Before starting this phase, read:
   - Files: `prisma/schema.prisma`, `src/app/api/exams/route.ts`
   - Note: Added @unique to Exam.name, created migration, and catch P2002 error in API
   - Reporter: sentry[bot]
+- [x] **[PR #20 - CRITICAL]** Fix case-sensitivity mismatch between findFirst and unique constraint
+  - Files: `prisma/migrations/20251231190000_exam_name_case_insensitive/migration.sql`
+  - Note: Replaced case-sensitive index with LOWER(name) for case-insensitive uniqueness
+  - Reporter: coderabbitai[bot]
 
 ### 2.2 ZIP Upload
 
