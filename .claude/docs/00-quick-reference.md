@@ -33,8 +33,8 @@ exam-study-app/
 │   │   │   ├── page.tsx            # Admin home
 │   │   │   ├── exams/page.tsx      # Exam list
 │   │   │   ├── exams/new/page.tsx  # Create exam
-│   │   │   ├── exams/[id]/page.tsx # Exam detail
-│   │   │   ├── exams/[id]/import/  # Import questions
+│   │   │   ├── exams/[examId]/page.tsx # Exam detail
+│   │   │   ├── exams/[examId]/import/  # Import questions
 │   │   │   └── progress/page.tsx   # Export/import progress
 │   │   └── api/                    # See API section below
 │   ├── components/
@@ -131,7 +131,7 @@ model StudyProgress {
   id        String   @id @default(cuid())
   examId    String
   exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
-  name      String   @default("Default")
+  name      String   @default(dbgenerated("'Snapshot ' || to_char(now(), 'YYYY-MM-DD HH24:MI')"))
   data      Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -469,7 +469,31 @@ UPLOAD_MAX_SIZE=52428800  # 50MB
 
 ## shadcn/ui Components Used
 
-Button, Card, Badge, Progress, Dialog, DropdownMenu, Tabs, Input, Textarea, Select, Checkbox, RadioGroup, Toast, Skeleton
+Button, Card, Badge, Progress, Dialog, AlertDialog, DropdownMenu, Tabs, Input, Textarea, Select, Checkbox, RadioGroup, Toast, Skeleton
+
+---
+
+## Form Validation Libraries
+
+```bash
+npm install react-hook-form zod @hookform/resolvers
+```
+
+```typescript
+// Usage pattern
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+const schema = z.object({
+  name: z.string().min(1, 'Required').max(200),
+  description: z.string().max(1000).optional(),
+});
+
+const { register, handleSubmit, formState: { errors } } = useForm({
+  resolver: zodResolver(schema),
+});
+```
 
 ---
 

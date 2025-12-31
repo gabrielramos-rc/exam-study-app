@@ -22,6 +22,7 @@ echo "  - Loki"
 echo "  - Jaeger"
 echo "  - pgAdmin"
 echo "  - cert-manager"
+echo "  - Envoy Gateway + Gateway API resources"
 echo "  - PostgreSQL (Dev + Prod)"
 echo ""
 
@@ -56,6 +57,23 @@ fi
 if helm status cert-manager -n cert-manager &> /dev/null; then
     helm uninstall cert-manager -n cert-manager
     echo -e "${GREEN}✓ cert-manager uninstalled${NC}"
+fi
+
+# Clean up Gateway API resources first
+if kubectl get namespace gateway &> /dev/null; then
+    echo -e "${YELLOW}Cleaning up Gateway API resources...${NC}"
+    kubectl delete httproute --all -n gateway 2>/dev/null || true
+    kubectl delete gateway --all -n gateway 2>/dev/null || true
+    kubectl delete certificate --all -n gateway 2>/dev/null || true
+    kubectl delete referencegrant --all -A 2>/dev/null || true
+    kubectl delete gatewayclass envoy 2>/dev/null || true
+    kubectl delete clusterissuer selfsigned-issuer 2>/dev/null || true
+    echo -e "${GREEN}✓ Gateway API resources cleaned up${NC}"
+fi
+
+if helm status envoy-gateway -n envoy-gateway-system &> /dev/null; then
+    helm uninstall envoy-gateway -n envoy-gateway-system
+    echo -e "${GREEN}✓ Envoy Gateway uninstalled${NC}"
 fi
 
 if helm status loki -n monitoring &> /dev/null; then
@@ -100,6 +118,8 @@ echo -e "${YELLOW}Deleting namespaces...${NC}"
 kubectl delete namespace argocd --wait=false 2>/dev/null || true
 kubectl delete namespace kubernetes-dashboard --wait=false 2>/dev/null || true
 kubectl delete namespace monitoring --wait=false 2>/dev/null || true
+kubectl delete namespace gateway --wait=false 2>/dev/null || true
+kubectl delete namespace envoy-gateway-system --wait=false 2>/dev/null || true
 kubectl delete namespace pgadmin --wait=false 2>/dev/null || true
 kubectl delete namespace cert-manager --wait=false 2>/dev/null || true
 kubectl delete namespace tracing --wait=false 2>/dev/null || true
@@ -142,6 +162,21 @@ kubectl delete crd orders.acme.cert-manager.io 2>/dev/null || true
 
 # Clean up Jaeger CRDs
 kubectl get crd -o name | grep jaegertracing.io | xargs -r kubectl delete 2>/dev/null || true
+
+# Clean up Gateway API CRDs
+kubectl delete crd gatewayclasses.gateway.networking.k8s.io 2>/dev/null || true
+kubectl delete crd gateways.gateway.networking.k8s.io 2>/dev/null || true
+kubectl delete crd httproutes.gateway.networking.k8s.io 2>/dev/null || true
+kubectl delete crd referencegrants.gateway.networking.k8s.io 2>/dev/null || true
+kubectl delete crd grpcroutes.gateway.networking.k8s.io 2>/dev/null || true
+kubectl delete crd tcproutes.gateway.networking.k8s.io 2>/dev/null || true
+kubectl delete crd tlsroutes.gateway.networking.k8s.io 2>/dev/null || true
+kubectl delete crd udproutes.gateway.networking.k8s.io 2>/dev/null || true
+kubectl delete crd backendtlspolicies.gateway.networking.k8s.io 2>/dev/null || true
+kubectl delete crd backendlbpolicies.gateway.networking.k8s.io 2>/dev/null || true
+
+# Clean up Envoy Gateway CRDs
+kubectl get crd -o name | grep gateway.envoyproxy.io | xargs -r kubectl delete 2>/dev/null || true
 
 echo ""
 echo -e "${BLUE}========================================${NC}"

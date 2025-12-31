@@ -22,7 +22,7 @@ echo "  - Loki"
 echo "  - cert-manager"
 echo "  - Istio (base + istiod)"
 echo "  - Kiali"
-echo "  - Envoy Gateway"
+echo "  - Envoy Gateway + Gateway API resources"
 echo "  - pgAdmin"
 echo "  - Metrics Server"
 echo "  - Falco"
@@ -117,9 +117,27 @@ if helm status cert-manager -n cert-manager &> /dev/null; then
     echo -e "${GREEN}✓ cert-manager uninstalled${NC}"
 fi
 
+# Clean up Gateway API resources first
+if kubectl get namespace gateway &> /dev/null; then
+    echo -e "${YELLOW}Cleaning up Gateway API resources...${NC}"
+    kubectl delete httproute --all -n gateway 2>/dev/null || true
+    kubectl delete gateway --all -n gateway 2>/dev/null || true
+    kubectl delete certificate --all -n gateway 2>/dev/null || true
+    kubectl delete referencegrant --all -A 2>/dev/null || true
+    kubectl delete gatewayclass envoy 2>/dev/null || true
+    kubectl delete clusterissuer selfsigned-issuer 2>/dev/null || true
+    echo -e "${GREEN}✓ Gateway API resources cleaned up${NC}"
+fi
+
+if helm status envoy-gateway -n envoy-gateway-system &> /dev/null; then
+    helm uninstall envoy-gateway -n envoy-gateway-system
+    echo -e "${GREEN}✓ Envoy Gateway uninstalled${NC}"
+fi
+
+# Also try old release name for backwards compatibility
 if helm status eg -n envoy-gateway-system &> /dev/null; then
     helm uninstall eg -n envoy-gateway-system
-    echo -e "${GREEN}✓ Envoy Gateway uninstalled${NC}"
+    echo -e "${GREEN}✓ Envoy Gateway (eg) uninstalled${NC}"
 fi
 
 if helm status loki -n monitoring &> /dev/null; then
@@ -153,6 +171,7 @@ echo -e "${YELLOW}Deleting namespaces...${NC}"
 kubectl delete namespace argocd --wait=false 2>/dev/null || true
 kubectl delete namespace kubernetes-dashboard --wait=false 2>/dev/null || true
 kubectl delete namespace monitoring --wait=false 2>/dev/null || true
+kubectl delete namespace gateway --wait=false 2>/dev/null || true
 kubectl delete namespace envoy-gateway-system --wait=false 2>/dev/null || true
 kubectl delete namespace pgadmin --wait=false 2>/dev/null || true
 kubectl delete namespace istio-system --wait=false 2>/dev/null || true

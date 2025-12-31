@@ -304,11 +304,19 @@ kubectl get secret pgadmin-pgadmin4 -n pgadmin -o jsonpath='{.data.password}' | 
 #### Connect to PostgreSQL
 
 After logging in, add a new server with:
-- **Host**: `postgres.exam-study-dev.svc.cluster.local` (or `postgres.exam-study-prod.svc.cluster.local`)
+- **Host**: `postgres-postgresql.exam-study-dev.svc.cluster.local` (or `postgres-postgresql.exam-study-prod.svc.cluster.local`)
 - **Port**: `5432`
 - **Database**: `study`
 - **Username**: `study`
-- **Password**: `study`
+- **Password**: Get from secret (see below)
+
+```bash
+# Get password for dev
+kubectl get secret postgres-credentials -n exam-study-dev -o jsonpath='{.data.postgres-password}' | base64 -d
+
+# Get password for prod
+kubectl get secret postgres-credentials -n exam-study-prod -o jsonpath='{.data.postgres-password}' | base64 -d
+```
 
 #### Helm Commands
 
@@ -450,29 +458,38 @@ kubectl scale deployment/exam-study-app --replicas=2 -n exam-study-dev
 
 ## PostgreSQL Database
 
+PostgreSQL is deployed via Helm chart (`bitnami/postgresql`) in each environment namespace.
+
 ### Access via kubectl
 
 ```bash
-# Port-forward to access locally
-kubectl port-forward svc/postgres 5432:5432 -n exam-study-dev &
+# Port-forward to access locally (Helm-deployed service)
+kubectl port-forward svc/postgres-postgresql 5432:5432 -n exam-study-dev &
+
+# Get the password from Kubernetes secret
+PGPASSWORD=$(kubectl get secret postgres-credentials -n exam-study-dev -o jsonpath='{.data.postgres-password}' | base64 -d)
 
 # Connect with psql
-psql postgresql://study:study@localhost:5432/study
+psql "postgresql://study:${PGPASSWORD}@localhost:5432/study"
 
 # Or exec directly into pod
-kubectl exec -it deployment/postgres -n exam-study-dev -- psql -U study -d study
+kubectl exec -it postgres-postgresql-0 -n exam-study-dev -- psql -U study -d study
 ```
 
 ### Credentials
 
 | Field | Value |
 |-------|-------|
-| Host | `localhost` (with port-forward) or `postgres` (in-cluster) |
-| Port | `5432` |
+| Host | `localhost` (with port-forward) or `postgres-postgresql` (in-cluster) |
+| Port | `5432` (dev), `5433` (prod with port-forward) |
 | Database | `study` |
 | Username | `study` |
-| Password | `study` |
-| Connection String | `postgresql://study:study@localhost:5432/study` |
+| Password | Stored in `postgres-credentials` secret |
+
+**Get password:**
+```bash
+kubectl get secret postgres-credentials -n exam-study-dev -o jsonpath='{.data.postgres-password}' | base64 -d
+```
 
 ### Common Queries
 
@@ -493,11 +510,14 @@ SELECT * FROM "Exam";
 ### Prisma Studio
 
 ```bash
-# Port-forward PostgreSQL first
-kubectl port-forward svc/postgres 5432:5432 -n exam-study-dev &
+# Port-forward PostgreSQL first (Helm-deployed)
+kubectl port-forward svc/postgres-postgresql 5432:5432 -n exam-study-dev &
+
+# Get the password from Kubernetes secret
+PGPASSWORD=$(kubectl get secret postgres-credentials -n exam-study-dev -o jsonpath='{.data.postgres-password}' | base64 -d)
 
 # Run Prisma Studio
-DATABASE_URL="postgresql://study:study@localhost:5432/study" npx prisma studio
+DATABASE_URL="postgresql://study:${PGPASSWORD}@localhost:5432/study" npx prisma studio
 # Opens at http://localhost:5555
 ```
 
@@ -598,15 +618,15 @@ kubectl patch application exam-study-app-dev -n argocd \
 ### Database Connection Issues
 
 ```bash
-# Check PostgreSQL pod
-kubectl get pods -n exam-study-dev -l app=postgres
-kubectl describe pod -n exam-study-dev -l app=postgres
+# Check PostgreSQL pod (Helm-deployed)
+kubectl get pods -n exam-study-dev -l app.kubernetes.io/name=postgresql
+kubectl describe pod -n exam-study-dev -l app.kubernetes.io/name=postgresql
 
 # Check service
-kubectl get svc postgres -n exam-study-dev
+kubectl get svc postgres-postgresql -n exam-study-dev
 
 # Test connectivity from app pod
-kubectl exec -it deployment/exam-study-app -n exam-study-dev -- nc -zv postgres 5432
+kubectl exec -it deployment/exam-study-app -n exam-study-dev -- nc -zv postgres-postgresql 5432
 ```
 
 ### Reset Everything

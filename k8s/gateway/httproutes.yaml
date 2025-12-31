@@ -1,0 +1,182 @@
+# HTTPRoutes for all services
+# These routes direct traffic from the Gateway to backend services
+---
+# Grafana
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana
+  namespace: gateway
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: gateway
+  hostnames:
+    - "grafana.local.dev"
+  rules:
+    - backendRefs:
+        - name: prometheus-grafana
+          namespace: monitoring
+          port: 80
+---
+# Prometheus
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: prometheus
+  namespace: gateway
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: gateway
+  hostnames:
+    - "prometheus.local.dev"
+  rules:
+    - backendRefs:
+        - name: prometheus-kube-prometheus-prometheus
+          namespace: monitoring
+          port: 9090
+---
+# Alertmanager
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: alertmanager
+  namespace: gateway
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: gateway
+  hostnames:
+    - "alertmanager.local.dev"
+  rules:
+    - backendRefs:
+        - name: prometheus-kube-prometheus-alertmanager
+          namespace: monitoring
+          port: 9093
+---
+# ArgoCD
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd
+  namespace: gateway
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: gateway
+  hostnames:
+    - "argocd.local.dev"
+  rules:
+    - backendRefs:
+        - name: argocd-server
+          namespace: argocd
+          port: 80
+---
+# Kubernetes Dashboard (web UI)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: dashboard
+  namespace: gateway
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: gateway
+  hostnames:
+    - "dashboard.local.dev"
+  rules:
+    - backendRefs:
+        - name: kubernetes-dashboard-web
+          namespace: kubernetes-dashboard
+          port: 8000
+---
+# Jaeger
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: jaeger
+  namespace: gateway
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: gateway
+  hostnames:
+    - "jaeger.local.dev"
+  rules:
+    - backendRefs:
+        - name: jaeger
+          namespace: tracing
+          port: 16686
+---
+# pgAdmin
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: pgadmin
+  namespace: gateway
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: gateway
+  hostnames:
+    - "pgadmin.local.dev"
+  rules:
+    - backendRefs:
+        - name: pgadmin-pgadmin4
+          namespace: pgadmin
+          port: 80
+---
+# Exam Study App (dev)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: exam-study-dev
+  namespace: gateway
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: gateway
+  hostnames:
+    - "exam-study-dev.local.dev"
+  rules:
+    - backendRefs:
+        - name: exam-study-app
+          namespace: exam-study-dev
+          port: 80
+---
+# Exam Study App (prod)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: exam-study-prod
+  namespace: gateway
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: gateway
+  hostnames:
+    - "exam-study.local.dev"
+  rules:
+    - backendRefs:
+        - name: exam-study-app
+          namespace: exam-study-prod
+          port: 80
+---
+# Kiali (Istio Dashboard) - only if Istio is installed
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: kiali
+  namespace: gateway
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: gateway
+  hostnames:
+    - "kiali.local.dev"
+  rules:
+    - backendRefs:
+        - name: kiali
+          namespace: istio-system
+          port: 20001

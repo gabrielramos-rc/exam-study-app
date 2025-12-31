@@ -14,7 +14,9 @@ datasource db {
 // ============================================
 model Exam {
   id          String   @id @default(cuid())
-  name        String
+  // Note: Unique index is case-insensitive via LOWER(name) in migration
+  // See: 20251231190000_exam_name_case_insensitive
+  name        String   @unique
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

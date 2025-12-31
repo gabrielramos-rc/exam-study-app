@@ -54,6 +54,10 @@ fi
 
 echo -e "${GREEN}✓ kubectl and helm are installed and connected${NC}"
 
+# Define project directory early (used by gateway and argocd setup)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
 # Step 1: Add Helm repos
 echo ""
 echo -e "${YELLOW}Step 1: Adding Helm repositories...${NC}"
@@ -260,13 +264,37 @@ echo -e "${GREEN}✓ Kiali installed${NC}"
 # Step 11: Install Envoy Gateway
 echo ""
 echo -e "${YELLOW}Step 11: Installing Envoy Gateway...${NC}"
-if helm status eg -n envoy-gateway-system &> /dev/null; then
+if helm status envoy-gateway -n envoy-gateway-system &> /dev/null; then
     echo -e "${YELLOW}Envoy Gateway already installed, upgrading...${NC}"
-    helm upgrade eg oci://docker.io/envoyproxy/gateway-helm -n envoy-gateway-system --wait
+    helm upgrade envoy-gateway oci://docker.io/envoyproxy/gateway-helm --version v1.3.0 -n envoy-gateway-system --wait
 else
-    helm install eg oci://docker.io/envoyproxy/gateway-helm -n envoy-gateway-system --create-namespace --wait
+    helm install envoy-gateway oci://docker.io/envoyproxy/gateway-helm --version v1.3.0 -n envoy-gateway-system --create-namespace --wait
 fi
 echo -e "${GREEN}✓ Envoy Gateway installed${NC}"
+
+# Step 11.5: Configure Gateway API
+echo ""
+echo -e "${YELLOW}Step 11.5: Configuring Gateway API with TLS...${NC}"
+
+# Wait for Envoy Gateway to be ready
+kubectl rollout status deployment/envoy-gateway -n envoy-gateway-system --timeout=60s 2>/dev/null || true
+
+# Apply Gateway manifests
+if [ -d "${PROJECT_DIR}/k8s/gateway" ]; then
+    kubectl apply -k "${PROJECT_DIR}/k8s/gateway"
+    echo -e "${GREEN}✓ Gateway API configured${NC}"
+
+    # Wait for certificate to be ready
+    echo -e "${YELLOW}Waiting for TLS certificate...${NC}"
+    kubectl wait --for=condition=Ready certificate/local-wildcard-cert -n gateway --timeout=60s 2>/dev/null || true
+
+    # Wait for Gateway to be programmed
+    sleep 5
+    kubectl wait --for=condition=Programmed gateway/main-gateway -n gateway --timeout=60s 2>/dev/null || true
+    echo -e "${GREEN}✓ Gateway ready with TLS${NC}"
+else
+    echo -e "${YELLOW}⚠ k8s/gateway directory not found, skipping Gateway API setup${NC}"
+fi
 
 # Step 12: Install pgAdmin
 echo ""
@@ -306,8 +334,6 @@ echo -e "${GREEN}✓ pgAdmin installed${NC}"
 # Step 13: Apply ArgoCD applications
 echo ""
 echo -e "${YELLOW}Step 13: Applying ArgoCD applications...${NC}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 if [ -f "${PROJECT_DIR}/k8s/argocd/project.yaml" ]; then
     kubectl apply -f "${PROJECT_DIR}/k8s/argocd/project.yaml"
@@ -501,8 +527,33 @@ echo -e "${YELLOW}Application URLs (after deployment):${NC}"
 echo "  Dev:  http://localhost:30001"
 echo "  Prod: http://localhost:30000"
 echo ""
+echo -e "${YELLOW}╔══════════════════════════════════════╗${NC}"
+echo -e "${YELLOW}║       GATEWAY API (TLS)              ║${NC}"
+echo -e "${YELLOW}╚══════════════════════════════════════╝${NC}"
+echo ""
+echo "To use HTTPS URLs via Gateway API, add to /etc/hosts:"
+echo ""
+echo "  sudo sh -c 'echo \"127.0.0.1 grafana.local.dev prometheus.local.dev alertmanager.local.dev\" >> /etc/hosts'"
+echo "  sudo sh -c 'echo \"127.0.0.1 argocd.local.dev dashboard.local.dev jaeger.local.dev\" >> /etc/hosts'"
+echo "  sudo sh -c 'echo \"127.0.0.1 pgadmin.local.dev exam-study.local.dev exam-study-dev.local.dev kiali.local.dev\" >> /etc/hosts'"
+echo ""
+echo -e "${BLUE}Gateway URLs (HTTPS):${NC}"
+echo "  Grafana:      https://grafana.local.dev"
+echo "  Prometheus:   https://prometheus.local.dev"
+echo "  Alertmanager: https://alertmanager.local.dev"
+echo "  ArgoCD:       https://argocd.local.dev"
+echo "  Dashboard:    https://dashboard.local.dev"
+echo "  Jaeger:       https://jaeger.local.dev"
+echo "  pgAdmin:      https://pgadmin.local.dev"
+echo "  Kiali:        https://kiali.local.dev"
+echo "  App (dev):    https://exam-study-dev.local.dev"
+echo "  App (prod):   https://exam-study.local.dev"
+echo ""
+echo -e "${YELLOW}Note: Browser will show security warning for self-signed certs${NC}"
+echo ""
 echo -e "${YELLOW}Check status:${NC}"
 echo "  kubectl get applications -n argocd"
+echo "  kubectl get gateway,httproute -n gateway"
 echo "  helm list -A"
 echo ""
 echo -e "${GREEN}Happy deploying!${NC}"

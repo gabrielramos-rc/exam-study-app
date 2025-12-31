@@ -94,6 +94,10 @@ jobs:
 
       - name: Build application
         run: npm run build
+        env:
+          # Dummy DATABASE_URL for build-time Prisma client initialization
+          # The actual database is not accessed during build
+          DATABASE_URL: postgresql://build:build@localhost:5432/build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6

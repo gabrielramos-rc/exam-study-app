@@ -119,7 +119,7 @@ exam-study-app/
 │   │   │
 │   │   ├── admin/              # Admin pages
 │   │   │   ├── page.tsx
-│   │   │   ├── exams/
+│   │   │   ├── exams/          # exams/, exams/new/, exams/[examId]/
 │   │   │   └── progress/
 │   │   │
 │   │   └── api/                # API routes
@@ -133,6 +133,11 @@ exam-study-app/
 │   │
 │   ├── components/             # React components
 │   │   ├── ui/                 # shadcn/ui components
+│   │   ├── exam/               # Exam management components
+│   │   │   ├── exam-card.tsx   # Exam list item card
+│   │   │   ├── exam-form.tsx   # Create exam form
+│   │   │   ├── delete-exam-dialog.tsx  # Deletion confirmation
+│   │   │   └── index.ts        # Component exports
 │   │   ├── question/           # Question-related
 │   │   ├── admin/              # Admin-related
 │   │   ├── analytics/          # Charts and stats
