@@ -1,6 +1,7 @@
 // src/app/api/exams/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { createExamSchema } from '@/lib/validations/exam';
 
@@ -132,6 +133,22 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    // Handle unique constraint violation (race condition safety)
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'CONFLICT',
+            message: 'An exam with this name already exists',
+          },
+        },
+        { status: 409 }
+      );
+    }
+
     console.error('Error creating exam:', error);
     return NextResponse.json(
       {

@@ -158,9 +158,9 @@ Before starting this phase, read:
   - File: `src/lib/validations/exam.ts`
   - Note: Both schemas now consistently convert empty description to null
   - Reporter: coderabbitai[bot]
-- [ ] **[PR #20 - HIGH]** Add unique constraint on exam name to prevent race condition
-  - File: `prisma/schema.prisma`
-  - Note: Check-then-act pattern has race condition; requires DB-level unique constraint and catching unique violation error
+- [x] **[PR #20 - HIGH]** Add unique constraint on exam name to prevent race condition
+  - Files: `prisma/schema.prisma`, `src/app/api/exams/route.ts`
+  - Note: Added @unique to Exam.name, created migration, and catch P2002 error in API
   - Reporter: sentry[bot]
 
 ### 2.2 ZIP Upload
