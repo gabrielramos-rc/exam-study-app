@@ -21,10 +21,11 @@ echo "  - Loki (Log Aggregation)"
 echo "  - Jaeger (Distributed Tracing)"
 echo "  - pgAdmin (PostgreSQL UI)"
 echo "  - cert-manager (TLS Certificates)"
+echo "  - Envoy Gateway (Gateway API with TLS)"
 echo "  - PostgreSQL (Dev + Prod databases)"
 echo ""
 echo -e "${YELLOW}Excluded (use setup-helm.sh for full install):${NC}"
-echo "  - Istio, Kiali, Envoy Gateway (Service Mesh)"
+echo "  - Istio, Kiali (Service Mesh)"
 echo "  - Falco, Gatekeeper, Trivy (Security)"
 echo "  - Sealed Secrets, Metrics Server"
 echo ""
@@ -233,6 +234,44 @@ else
 fi
 echo -e "${GREEN}✓ cert-manager installed${NC}"
 
+# Step 9.5: Install Envoy Gateway
+echo ""
+echo -e "${YELLOW}Step 9.5: Installing Envoy Gateway...${NC}"
+if helm status envoy-gateway -n envoy-gateway-system &> /dev/null; then
+    echo -e "${YELLOW}Envoy Gateway already installed, upgrading...${NC}"
+    helm upgrade envoy-gateway oci://docker.io/envoyproxy/gateway-helm --version v1.3.0 -n envoy-gateway-system --wait
+else
+    helm install envoy-gateway oci://docker.io/envoyproxy/gateway-helm --version v1.3.0 -n envoy-gateway-system --create-namespace --wait
+fi
+echo -e "${GREEN}✓ Envoy Gateway installed${NC}"
+
+# Step 9.6: Configure Gateway API
+echo ""
+echo -e "${YELLOW}Step 9.6: Configuring Gateway API with TLS...${NC}"
+
+# Wait for Envoy Gateway to be ready
+kubectl rollout status deployment/envoy-gateway -n envoy-gateway-system --timeout=60s 2>/dev/null || true
+
+# Apply Gateway manifests
+SCRIPT_DIR_GW="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR_GW="$(dirname "$SCRIPT_DIR_GW")"
+
+if [ -d "${PROJECT_DIR_GW}/k8s/gateway" ]; then
+    kubectl apply -k "${PROJECT_DIR_GW}/k8s/gateway"
+    echo -e "${GREEN}✓ Gateway API configured${NC}"
+
+    # Wait for certificate to be ready
+    echo -e "${YELLOW}Waiting for TLS certificate...${NC}"
+    kubectl wait --for=condition=Ready certificate/local-wildcard-cert -n gateway --timeout=60s 2>/dev/null || true
+
+    # Wait for Gateway to be programmed
+    sleep 5
+    kubectl wait --for=condition=Programmed gateway/main-gateway -n gateway --timeout=60s 2>/dev/null || true
+    echo -e "${GREEN}✓ Gateway ready with TLS${NC}"
+else
+    echo -e "${YELLOW}⚠ k8s/gateway directory not found, skipping Gateway API setup${NC}"
+fi
+
 # Step 10: Install pgAdmin
 echo ""
 echo -e "${YELLOW}Step 10: Installing pgAdmin...${NC}"
@@ -363,6 +402,29 @@ echo ""
 echo -e "${YELLOW}Application URLs (after deployment):${NC}"
 echo "  Dev:  http://localhost:30001"
 echo "  Prod: http://localhost:30000"
+echo ""
+echo -e "${YELLOW}╔══════════════════════════════════════╗${NC}"
+echo -e "${YELLOW}║       GATEWAY API (TLS)              ║${NC}"
+echo -e "${YELLOW}╚══════════════════════════════════════╝${NC}"
+echo ""
+echo "To use HTTPS URLs via Gateway API, add to /etc/hosts:"
+echo ""
+echo "  sudo sh -c 'echo \"127.0.0.1 grafana.local.dev prometheus.local.dev alertmanager.local.dev\" >> /etc/hosts'"
+echo "  sudo sh -c 'echo \"127.0.0.1 argocd.local.dev dashboard.local.dev jaeger.local.dev\" >> /etc/hosts'"
+echo "  sudo sh -c 'echo \"127.0.0.1 pgadmin.local.dev exam-study.local.dev exam-study-dev.local.dev\" >> /etc/hosts'"
+echo ""
+echo -e "${BLUE}Gateway URLs (HTTPS):${NC}"
+echo "  Grafana:      https://grafana.local.dev"
+echo "  Prometheus:   https://prometheus.local.dev"
+echo "  Alertmanager: https://alertmanager.local.dev"
+echo "  ArgoCD:       https://argocd.local.dev"
+echo "  Dashboard:    https://dashboard.local.dev"
+echo "  Jaeger:       https://jaeger.local.dev"
+echo "  pgAdmin:      https://pgadmin.local.dev"
+echo "  App (dev):    https://exam-study-dev.local.dev"
+echo "  App (prod):   https://exam-study.local.dev"
+echo ""
+echo -e "${YELLOW}Note: Browser will show security warning for self-signed certs${NC}"
 echo ""
 echo -e "${YELLOW}To add security/mesh tools later:${NC}"
 echo "  ./scripts/setup-helm.sh"

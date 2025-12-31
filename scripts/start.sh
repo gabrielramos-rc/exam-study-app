@@ -164,6 +164,26 @@ echo -e "${GREEN}   Environment Started!                ${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
+# Show Gateway status if available
+if kubectl get gateway main-gateway -n gateway &> /dev/null; then
+    echo -e "${YELLOW}Gateway API Status:${NC}"
+    kubectl get gateway -n gateway 2>/dev/null
+    echo ""
+    echo -e "${BLUE}Gateway URLs (HTTPS):${NC}"
+    echo "  Grafana:      https://grafana.local.dev"
+    echo "  Prometheus:   https://prometheus.local.dev"
+    echo "  Alertmanager: https://alertmanager.local.dev"
+    echo "  ArgoCD:       https://argocd.local.dev"
+    echo "  Dashboard:    https://dashboard.local.dev"
+    echo "  Jaeger:       https://jaeger.local.dev"
+    echo "  pgAdmin:      https://pgadmin.local.dev"
+    echo "  App (dev):    https://exam-study-dev.local.dev"
+    echo "  App (prod):   https://exam-study.local.dev"
+    echo ""
+    echo -e "${YELLOW}Note: Ensure /etc/hosts has entries for *.local.dev -> 127.0.0.1${NC}"
+    echo ""
+fi
+
 # Show Helm releases
 echo -e "${YELLOW}Helm Releases:${NC}"
 helm list -A 2>/dev/null || echo "  (helm not installed or no releases)"

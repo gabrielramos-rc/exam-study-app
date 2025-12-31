@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 // GET /api/exams - List all exams with stats
 export async function GET() {
   try {
+    // Fetch all exams with question counts in a single query
     const exams = await prisma.exam.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
@@ -15,49 +16,92 @@ export async function GET() {
       },
     });
 
-    // Get additional stats for each exam
-    const examsWithStats = await Promise.all(
-      exams.map(async (exam) => {
-        // Count answered questions
-        const answeredCount = await prisma.answer.count({
-          where: {
-            question: { examId: exam.id },
-          },
-        });
+    // Get all exam IDs for batch queries
+    const examIds = exams.map((exam) => exam.id);
 
-        // Calculate accuracy (only if there are answers)
-        let accuracy = 0;
-        if (answeredCount > 0) {
-          const correctCount = await prisma.answer.count({
-            where: {
-              question: { examId: exam.id },
-              correct: true,
-            },
-          });
-          accuracy = Math.round((correctCount / answeredCount) * 100 * 10) / 10;
-        }
+    // Batch query: Get answer stats grouped by examId (answeredCount and correctCount)
+    const answerStats = await prisma.answer.groupBy({
+      by: ['questionId'],
+      where: {
+        question: { examId: { in: examIds } },
+      },
+      _count: { id: true },
+    });
 
-        // Count due for review
-        const dueForReview = await prisma.srsCard.count({
-          where: {
-            question: { examId: exam.id },
-            nextReview: { lte: new Date() },
-          },
-        });
+    // Fetch question to exam mapping for the answers we found
+    const questionsWithAnswers = await prisma.question.findMany({
+      where: { id: { in: answerStats.map((a) => a.questionId) } },
+      select: { id: true, examId: true },
+    });
+    const questionToExam = new Map(questionsWithAnswers.map((q) => [q.id, q.examId]));
 
-        return {
-          id: exam.id,
-          name: exam.name,
-          description: exam.description,
-          questionCount: exam._count.questions,
-          answeredCount,
-          accuracy,
-          dueForReview,
-          createdAt: exam.createdAt.toISOString(),
-          updatedAt: exam.updatedAt.toISOString(),
-        };
-      })
-    );
+    // Batch query: Get correct answer counts grouped by questionId
+    const correctStats = await prisma.answer.groupBy({
+      by: ['questionId'],
+      where: {
+        question: { examId: { in: examIds } },
+        correct: true,
+      },
+      _count: { id: true },
+    });
+
+    // Aggregate answer stats by examId
+    const examAnswerStats = new Map<string, { answered: number; correct: number }>();
+    for (const stat of answerStats) {
+      const examId = questionToExam.get(stat.questionId);
+      if (examId) {
+        const current = examAnswerStats.get(examId) || { answered: 0, correct: 0 };
+        current.answered += stat._count.id;
+        examAnswerStats.set(examId, current);
+      }
+    }
+    for (const stat of correctStats) {
+      const examId = questionToExam.get(stat.questionId);
+      if (examId) {
+        const current = examAnswerStats.get(examId) || { answered: 0, correct: 0 };
+        current.correct += stat._count.id;
+        examAnswerStats.set(examId, current);
+      }
+    }
+
+    // Batch query: Get due for review counts
+    const dueCards = await prisma.srsCard.findMany({
+      where: {
+        question: { examId: { in: examIds } },
+        nextReview: { lte: new Date() },
+      },
+      select: { question: { select: { examId: true } } },
+    });
+
+    // Aggregate due cards by examId
+    const examDueCount = new Map<string, number>();
+    for (const card of dueCards) {
+      const examId = card.question.examId;
+      examDueCount.set(examId, (examDueCount.get(examId) || 0) + 1);
+    }
+
+    // Build response with all stats
+    const examsWithStats = exams.map((exam) => {
+      const stats = examAnswerStats.get(exam.id) || { answered: 0, correct: 0 };
+      const answeredCount = stats.answered;
+      const accuracy =
+        answeredCount > 0
+          ? Math.round((stats.correct / answeredCount) * 100 * 10) / 10
+          : 0;
+      const dueForReview = examDueCount.get(exam.id) || 0;
+
+      return {
+        id: exam.id,
+        name: exam.name,
+        description: exam.description,
+        questionCount: exam._count.questions,
+        answeredCount,
+        accuracy,
+        dueForReview,
+        createdAt: exam.createdAt.toISOString(),
+        updatedAt: exam.updatedAt.toISOString(),
+      };
+    });
 
     return NextResponse.json({ exams: examsWithStats });
   } catch (error) {

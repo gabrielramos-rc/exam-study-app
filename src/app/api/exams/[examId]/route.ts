@@ -34,14 +34,16 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Get answer stats
-    const answers = await prisma.answer.findMany({
-      where: { question: { examId } },
-      select: { correct: true },
-    });
+    // Get answer stats using count queries (memory-efficient)
+    const [answered, correct] = await Promise.all([
+      prisma.answer.count({
+        where: { question: { examId } },
+      }),
+      prisma.answer.count({
+        where: { question: { examId }, correct: true },
+      }),
+    ]);
 
-    const answered = answers.length;
-    const correct = answers.filter((a) => a.correct).length;
     const accuracy = answered > 0 ? Math.round((correct / answered) * 100 * 10) / 10 : 0;
 
     // Get due for review count

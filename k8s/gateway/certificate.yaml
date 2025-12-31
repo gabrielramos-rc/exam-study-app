@@ -1,0 +1,33 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: local-wildcard-cert
+  namespace: gateway
+spec:
+  secretName: local-wildcard-tls
+  duration: 8760h # 1 year
+  renewBefore: 720h # 30 days
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    size: 2048
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+    - "*.local.dev"
+    - "local.dev"
+    - "grafana.local.dev"
+    - "prometheus.local.dev"
+    - "alertmanager.local.dev"
+    - "argocd.local.dev"
+    - "dashboard.local.dev"
+    - "jaeger.local.dev"
+    - "pgadmin.local.dev"
+    - "exam-study.local.dev"
+    - "exam-study-dev.local.dev"
+    - "kiali.local.dev"
+    - "loki.local.dev"
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer

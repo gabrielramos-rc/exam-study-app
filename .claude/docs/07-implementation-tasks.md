@@ -125,6 +125,18 @@ Before starting this phase, read:
 - [x] Implement `GET /api/exams` endpoint
 - [x] Implement `DELETE /api/exams/{id}` endpoint
 - [x] Create exam detail page (`/admin/exams/[id]`)
+- [ ] **[PR #20]** Parallelize pre-deletion count queries for improved response time
+  - File: `src/app/api/exams/[examId]/route.ts:142-155`
+  - Note: Execute question IDs, answers count, and srsCards count queries in parallel using Promise.all
+- [ ] **[PR #20]** Log caught errors for debugging in exam form
+  - File: `src/components/exam/exam-form.tsx:73-74`
+  - Note: Empty catch clause discards error details; log error while keeping generic user message
+- [ ] **[PR #20]** Log caught errors for debugging in exams page
+  - File: `src/app/admin/exams/page.tsx:34-35`
+  - Note: Preserve error details for development debugging
+- [ ] **[PR #20]** Align accuracy precision consistency in exam stats
+  - File: `src/app/api/exams/[examId]/route.ts:76-82`
+  - Note: bySection accuracy is integer while overall accuracy uses one decimal; align for consistency
 
 ### 2.2 ZIP Upload
 
@@ -379,7 +391,7 @@ Before starting this phase, read:
 - [ ] Touch-friendly tap targets (min 44px)
 - [ ] Full-screen quiz mode on mobile
 
-### 6.4 Error Handling
+### 6.4 Error Handling & Browser Compatibility
 
 **Read:** `05-frontend-design.md` (Error States section)
 **Read:** `06-api-specification.md` (Error Responses section)
@@ -388,6 +400,9 @@ Before starting this phase, read:
 - [ ] Form validation messages
 - [ ] API error handling
 - [ ] Loading states everywhere
+- [ ] **[PR #20]** Remove unsupported `field-sizing-content` CSS property from textarea
+  - File: `src/components/ui/textarea.tsx:5-16`
+  - Note: Property not supported in Firefox (any version) and Chrome only from v123+; remove or add fallback
 
 ### 6.5 Performance
 
@@ -657,14 +672,14 @@ Create hands-on exercises for exam prep:
 | Phase | Tasks | Priority | Key Docs to Read |
 |-------|-------|----------|------------------|
 | 1. Foundation | 30 | Critical | 02, 03, 05, 08 |
-| 2. Admin & Import | 20 | Critical | 03, 04, 06 |
+| 2. Admin & Import | 24 | Critical | 03, 04, 06 |
 | 3. Study Features | 22 | Critical | 04, 05, 06 |
 | 4. Spaced Repetition | 15 | High | 03, 04, 06 |
 | 5. Analytics | 14 | Medium | 03, 04, 05, 06 |
-| 6. Polish & PWA | 22 | Medium | 01, 05, 08 |
+| 6. Polish & PWA | 23 | Medium | 01, 05, 08 |
 | 7. Advanced K8s (CKAD/CKS) | 89 | Optional | 08, ArgoCD docs |
 
-**Total: ~212 tasks** (123 core + 89 Kubernetes/GitOps learning)
+**Total: ~217 tasks** (128 core + 89 Kubernetes/GitOps learning)
 
 ### Phase 7 Breakdown
 
