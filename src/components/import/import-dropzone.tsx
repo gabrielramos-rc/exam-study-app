@@ -134,6 +134,16 @@ export function ImportDropzone({
 
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
+            // Update to processing state when upload completes
+            setState(prev => ({
+              ...prev,
+              progress: {
+                status: 'processing',
+                uploadProgress: 100,
+                processingMessage: 'Processing ZIP file...',
+              },
+            }));
+
             try {
               const response = JSON.parse(xhr.responseText);
               resolve(response);
@@ -161,16 +171,6 @@ export function ImportDropzone({
         xhr.open('POST', `/api/exams/${examId}/import`);
         xhr.send(formData);
       });
-
-      // Update to processing state
-      setState(prev => ({
-        ...prev,
-        progress: {
-          status: 'processing',
-          uploadProgress: 100,
-          processingMessage: 'Processing ZIP file...',
-        },
-      }));
 
       const result = await uploadPromise;
 
@@ -348,7 +348,7 @@ export function ImportDropzone({
           )}
 
           <h3 className="text-lg font-semibold mb-1">
-            {isDragActive ? 'Drop ZIP file here' : 'Drop ZIP file here'}
+            {isDragActive ? 'Release to upload' : 'Drop ZIP file here'}
           </h3>
 
           <p className="text-muted-foreground text-sm mb-4">

@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { validateUploadFile } from '@/lib/config/upload';
 
 interface RouteParams {
   params: Promise<{ examId: string }>;
@@ -46,31 +47,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Validate file type
-    const isZip = file.type === 'application/zip' ||
-                  file.type === 'application/x-zip-compressed' ||
-                  file.name.toLowerCase().endsWith('.zip');
-
-    if (!isZip) {
+    // Validate file type and size using shared validation
+    const validationError = validateUploadFile(file);
+    if (validationError) {
       return NextResponse.json(
         {
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Only ZIP files are accepted',
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validate file size (50MB limit)
-    const maxSize = 50 * 1024 * 1024;
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        {
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'File size must be less than 50MB',
+            message: validationError,
           },
         },
         { status: 400 }

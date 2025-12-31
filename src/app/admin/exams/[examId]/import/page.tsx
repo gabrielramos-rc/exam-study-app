@@ -27,9 +27,13 @@ export default function ImportPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchExam = async () => {
       try {
-        const response = await fetch(`/api/exams/${examId}`);
+        const response = await fetch(`/api/exams/${examId}`, {
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
           const errorData: ApiError = await response.json();
@@ -43,7 +47,11 @@ export default function ImportPage() {
           name: data.name,
           questionCount: data.stats.totalQuestions,
         });
-      } catch {
+      } catch (err) {
+        // Ignore abort errors
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
         setError('Failed to load exam details.');
       } finally {
         setIsLoading(false);
@@ -51,6 +59,10 @@ export default function ImportPage() {
     };
 
     fetchExam();
+
+    return () => {
+      controller.abort();
+    };
   }, [examId]);
 
   const handleImportComplete = (result: ImportResult) => {

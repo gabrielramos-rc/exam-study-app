@@ -6,7 +6,7 @@
 export const UPLOAD_CONFIG = {
   /**
    * Maximum file size in bytes (50MB)
-   * This should match UPLOAD_MAX_SIZE env var if set
+   * Note: Could be made configurable via UPLOAD_MAX_SIZE env var in the future
    */
   MAX_FILE_SIZE: 50 * 1024 * 1024,
 
