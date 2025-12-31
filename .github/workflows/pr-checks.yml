@@ -62,6 +62,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Dummy DATABASE_URL for build-time Prisma client initialization
+          DATABASE_URL: postgresql://build:build@localhost:5432/build
 
   security-complete:
     name: Security Checks
