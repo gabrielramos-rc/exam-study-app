@@ -1,0 +1,49 @@
+# Dockerfile.migrate - Lightweight migration container for Prisma
+# This image contains only Prisma CLI for running database migrations
+# Target size: ~300-400MB (vs ~1.38GB for full app image)
+
+FROM node:24-alpine AS builder
+
+WORKDIR /app
+
+# Create minimal package.json with only prisma dependencies
+# This avoids installing app dependencies from the real package.json
+RUN echo '{"name":"migrate","private":true,"dependencies":{"prisma":"^7.2.0","@prisma/client":"^7.2.0"}}' > package.json
+
+# Install only prisma CLI
+RUN npm install
+
+# Copy only prisma-related files needed for migrations
+COPY prisma/ ./prisma/
+COPY prisma.config.ts ./
+
+# Generate Prisma client (needed for schema validation during migrate)
+RUN npx prisma generate
+
+# Production stage - minimal image
+FROM node:24-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copy prisma CLI and its dependencies
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy prisma schema, migrations, and config
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+
+# Copy generated Prisma client (needed for migrate deploy)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# Run as non-root user (CKS best practice)
+RUN addgroup -g 1001 -S nodejs && adduser -S prisma -u 1001
+USER prisma
+
+# Health check - verify prisma is available
+HEALTHCHECK --interval=30s --timeout=5s --retries=1 \
+  CMD node node_modules/prisma/build/index.js --version || exit 1
+
+# Default command - run migrations
+CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]

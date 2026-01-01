@@ -15,8 +15,9 @@ spec:
           command: ['sh', '-c', 'until nc -z postgres 5432; do echo waiting for postgres; sleep 2; done']
       containers:
         - name: migrate
-          image: ghcr.io/gabrielramos-rc/exam-study-app:latest
-          # Use node directly since npx is removed from production image for security
+          # Use dedicated lightweight migration image (see Dockerfile.migrate)
+          image: ghcr.io/gabrielramos-rc/exam-study-app-migrate:latest
+          # Command is set in Dockerfile.migrate CMD, but explicit here for clarity
           command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
           workingDir: /app
           env:

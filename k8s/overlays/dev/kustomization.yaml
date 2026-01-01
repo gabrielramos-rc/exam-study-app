@@ -88,14 +88,14 @@ patches:
         path: /spec/template/spec/containers/0/resources/limits/cpu
         value: "250m"
 
-  # Update migration job image with Never pull for local images
+  # Update migration job to use dedicated lightweight migration image
   - target:
       kind: Job
       name: db-migration
     patch: |
       - op: replace
         path: /spec/template/spec/containers/0/image
-        value: ghcr.io/gabrielramos-rc/exam-study-app:dev
+        value: ghcr.io/gabrielramos-rc/exam-study-app-migrate:dev
       - op: add
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Never
@@ -112,4 +112,6 @@ patches:
 # Image tag override
 images:
   - name: ghcr.io/gabrielramos-rc/exam-study-app
+    newTag: dev
+  - name: ghcr.io/gabrielramos-rc/exam-study-app-migrate
     newTag: dev

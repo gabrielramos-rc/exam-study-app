@@ -88,14 +88,14 @@ patches:
         path: /spec/template/spec/containers/0/resources/limits/cpu
         value: "500m"
 
-  # Update migration job image
+  # Update migration job to use dedicated lightweight migration image
   - target:
       kind: Job
       name: db-migration
     patch: |
       - op: replace
         path: /spec/template/spec/containers/0/image
-        value: ghcr.io/gabrielramos-rc/exam-study-app:latest
+        value: ghcr.io/gabrielramos-rc/exam-study-app-migrate:latest
       - op: add
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: IfNotPresent
@@ -124,4 +124,6 @@ patches:
 # Image tag override
 images:
   - name: ghcr.io/gabrielramos-rc/exam-study-app
+    newTag: latest
+  - name: ghcr.io/gabrielramos-rc/exam-study-app-migrate
     newTag: latest

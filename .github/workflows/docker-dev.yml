@@ -1,6 +1,6 @@
-name: Build Dev Image
+name: Build Dev Images
 
-# Builds and pushes dev image on every push to dev branch
+# Builds and pushes dev images on every push to dev branch
 # This triggers auto-deployment to dev environment via ArgoCD
 
 on:
@@ -12,14 +12,15 @@ on:
       - 'package-lock.json'
       - 'prisma/**'
       - 'Dockerfile'
+      - 'Dockerfile.migrate'
 
 concurrency:
   group: dev-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-dev:
-    name: Build & Push Dev Image
+  build-app:
+    name: Build App Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -56,24 +57,71 @@ jobs:
             type=raw,value=dev
             type=sha,prefix=sha-
 
-      - name: Build and push dev image
+      - name: Build and push app image
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ./Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
 
+  build-migrate:
+    name: Build Migration Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}-migrate
+          tags: |
+            type=raw,value=dev
+            type=sha,prefix=sha-
+
+      - name: Build and push migration image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.migrate
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=migrate
+          cache-to: type=gha,mode=max,scope=migrate
+
+  summary:
+    name: Create Summary
+    runs-on: ubuntu-latest
+    needs: [build-app, build-migrate]
+    steps:
       - name: Create summary
         run: |
-          echo "## Dev Image Built 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "## Dev Images Built 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Tags" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "### Images" >> $GITHUB_STEP_SUMMARY
+          echo "- **App**: \`ghcr.io/${{ github.repository }}:dev\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Migration**: \`ghcr.io/${{ github.repository }}-migrate:dev\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
           echo "ArgoCD will automatically deploy this to the **dev** environment." >> $GITHUB_STEP_SUMMARY
